@@ -9,8 +9,9 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 add_executable(cartan
     src/main.cpp
-    src/MainWindow.cpp
-    src/MainWindow.h
+    src/app/MainWindow.cpp
+    src/app/MainWindow.h
 )
 
+target_include_directories(cartan PRIVATE src)
 target_link_libraries(cartan PRIVATE Qt6::Widgets)

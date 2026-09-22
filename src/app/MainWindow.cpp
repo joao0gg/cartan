@@ -1,4 +1,4 @@
-#include "MainWindow.h"
+#include "app/MainWindow.h"
 
 #include <QDockWidget>
 #include <QLabel>
