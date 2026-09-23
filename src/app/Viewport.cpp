@@ -1,12 +1,30 @@
 #include "app/Viewport.h"
 
+#include <QLabel>
 #include <QMouseEvent>
+#include <QTimer>
 #include <QWheelEvent>
 
 #include <string>
 
 Viewport::Viewport(QWidget *parent) : QOpenGLWidget(parent) {
   setFocusPolicy(Qt::StrongFocus);
+
+  // fps timer
+  m_fpsLabel = new QLabel("0 FPS", this);
+  m_fpsLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+  m_fpsLabel->setStyleSheet("color: white;");
+  m_fpsLabel->move(VIEWPORT_FPS_MARGIN, VIEWPORT_FPS_MARGIN);
+
+  auto *fpsTimer = new QTimer(this);
+
+  connect(fpsTimer, &QTimer::timeout, this, [this]() {
+    m_fpsLabel->setText(QString("%1 FPS").arg(m_frameCount * 1000 / VIEWPORT_FPS_INTERVAL));
+    m_fpsLabel->adjustSize();
+    m_frameCount = 0;
+  });
+
+  fpsTimer->start(VIEWPORT_FPS_INTERVAL);
 }
 
 Viewport::~Viewport() {
@@ -44,6 +62,8 @@ void Viewport::paintGL() {
 
   m_renderer.draw(*this, m_camera, static_cast<int>(width() * devicePixelRatioF()),
                   static_cast<int>(height() * devicePixelRatioF()));
+
+  ++m_frameCount;
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event) {
