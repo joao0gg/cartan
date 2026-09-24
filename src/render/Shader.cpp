@@ -3,7 +3,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #define SHADER_LOG_SIZE 1024
+
 namespace cartan::render {
+
 namespace {
 
 bool compiled(GL &gl, unsigned int shader, std::string &error) {

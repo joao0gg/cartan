@@ -1,25 +1,54 @@
 #include "render/Renderer.h"
 
-#include <glm/gtc/matrix_inverse.hpp>
+#include <QFile>
 
-#include "io/ShaderIO.h"
+#include <glm/gtc/matrix_inverse.hpp>
 
 namespace cartan::render {
 
-bool Renderer::initialize(GL &gl, const std::filesystem::path &shaderDir, std::string &error) {
-  const std::string vertex = io::readTextFile(shaderDir / "surface.vert");
-  const std::string fragment = io::readTextFile(shaderDir / "surface.frag");
+namespace {
+
+bool readResource(const QString &path, std::string &text, std::string &error) {
+  QFile file(path);
+  if (!file.open(QIODevice::ReadOnly)) {
+    error = "cannot open " + path.toStdString();
+    return false;
+  }
+
+  text = file.readAll().toStdString();
+
+  return true;
+}
+
+} // namespace
+
+bool Renderer::initialize(GL &gl, std::string &error) {
+  std::string vertex;
+  std::string fragment;
+
+  if (!readResource(":/render/shaders/surface.vert", vertex, error) ||
+      !readResource(":/render/shaders/surface.frag", fragment, error)) {
+    return false;
+  }
 
   return m_surface.build(gl, vertex.c_str(), fragment.c_str(), error);
 }
 
 void Renderer::shutdown(GL &gl) {
-  m_mesh.destroy(gl);
+  clearMeshes(gl);
   m_surface.destroy(gl);
 }
 
-void Renderer::setMesh(GL &gl, const RenderMesh &mesh) {
-  m_mesh.upload(gl, mesh);
+void Renderer::addMesh(GL &gl, const core::Mesh &mesh) {
+  m_meshes.emplace_back().upload(gl, mesh);
+}
+
+void Renderer::clearMeshes(GL &gl) {
+  for (auto &mesh : m_meshes) {
+    mesh.destroy(gl);
+  }
+
+  m_meshes.clear();
 }
 
 void Renderer::draw(GL &gl, const Camera &camera, int width, int height) {
@@ -28,7 +57,7 @@ void Renderer::draw(GL &gl, const Camera &camera, int width, int height) {
   gl.glClearColor(RENDERER_CLEAR_COLOR);
   gl.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (m_mesh.empty()) {
+  if (m_meshes.empty()) {
     return;
   }
 
@@ -41,7 +70,9 @@ void Renderer::draw(GL &gl, const Camera &camera, int width, int height) {
   m_surface.setMat3(gl, "uNormalMatrix", glm::inverseTranspose(glm::mat3(modelView)));
   m_surface.setVec3(gl, "uColor", RENDERER_SURFACE_COLOR);
 
-  m_mesh.draw(gl);
+  for (const auto &mesh : m_meshes) {
+    mesh.draw(gl);
+  }
 }
 
 } // namespace cartan::render

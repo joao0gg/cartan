@@ -5,9 +5,9 @@
 
 #include <glm/glm.hpp>
 
-namespace cartan::render {
+namespace cartan::core {
 
-struct RenderMesh {
+struct Mesh {
   struct Vertex {
     glm::vec3 position{0.0f};
     glm::vec3 normal{0.0f};
@@ -27,4 +27,4 @@ struct RenderMesh {
   std::size_t edgeCount() const;
 };
 
-} // namespace cartan::render
+} // namespace cartan::core

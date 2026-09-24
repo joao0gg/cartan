@@ -3,11 +3,11 @@
 #include <filesystem>
 #include <string>
 
-#include "render/RenderMesh.h"
+#include "core/Mesh.h"
 
 namespace cartan::io {
 
-render::RenderMesh loadSurface(const std::filesystem::path &path);
+core::Mesh loadSurface(const std::filesystem::path &path);
 
 std::string supportedExtensions();
 

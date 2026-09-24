@@ -1,13 +1,13 @@
 #pragma once
 
+#include "core/Mesh.h"
 #include "render/GLFunctions.h"
-#include "render/RenderMesh.h"
 
 namespace cartan::render {
 
 class GpuMesh {
 public:
-  void upload(GL &gl, const RenderMesh &mesh);
+  void upload(GL &gl, const core::Mesh &mesh);
   void destroy(GL &gl);
   void draw(GL &gl) const;
 

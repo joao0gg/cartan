@@ -9,7 +9,7 @@
 
 namespace cartan::io {
 
-render::RenderMesh loadSurface(const std::filesystem::path &path) {
+core::Mesh loadSurface(const std::filesystem::path &path) {
   Assimp::Importer importer;
   // clang-format off
   const aiScene *scene = importer.ReadFile(path.string(),
@@ -25,9 +25,10 @@ render::RenderMesh loadSurface(const std::filesystem::path &path) {
     throw std::runtime_error(importer.GetErrorString());
   }
 
-  render::RenderMesh out;
+  core::Mesh out;
   for (unsigned int m = 0; m < scene->mNumMeshes; ++m) {
     const aiMesh *mesh = scene->mMeshes[m];
+
     if ((mesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE) == 0) {
       continue;
     }
@@ -35,11 +36,13 @@ render::RenderMesh loadSurface(const std::filesystem::path &path) {
     const auto base = static_cast<std::uint32_t>(out.vertices.size());
 
     for (unsigned int v = 0; v < mesh->mNumVertices; ++v) {
-      render::RenderMesh::Vertex vertex;
+      core::Mesh::Vertex vertex;
       vertex.position = {mesh->mVertices[v].x, mesh->mVertices[v].y, mesh->mVertices[v].z};
+
       if (mesh->HasNormals()) {
         vertex.normal = {mesh->mNormals[v].x, mesh->mNormals[v].y, mesh->mNormals[v].z};
       }
+
       out.vertices.push_back(vertex);
     }
 
@@ -69,6 +72,7 @@ std::string supportedExtensions() {
   std::string list;
   importer.GetExtensionList(list);
   std::replace(list.begin(), list.end(), ';', ' ');
+
   return list;
 }
 

@@ -1,12 +1,12 @@
-#include "render/RenderMesh.h"
+#include "core/Mesh.h"
 
 #include <algorithm>
 #include <limits>
 #include <unordered_set>
 
-namespace cartan::render {
+namespace cartan::core {
 
-void RenderMesh::computeBounds() {
+void Mesh::computeBounds() {
   if (vertices.empty()) {
     boundsMin = glm::vec3(0.0f);
     boundsMax = glm::vec3(0.0f);
@@ -16,13 +16,14 @@ void RenderMesh::computeBounds() {
 
   boundsMin = glm::vec3(std::numeric_limits<float>::max());
   boundsMax = glm::vec3(std::numeric_limits<float>::lowest());
+
   for (const auto &vertex : vertices) {
     boundsMin = glm::min(boundsMin, vertex.position);
     boundsMax = glm::max(boundsMax, vertex.position);
   }
 }
 
-std::size_t RenderMesh::edgeCount() const {
+std::size_t Mesh::edgeCount() const {
   std::unordered_set<std::uint64_t> edges;
   edges.reserve(indices.size());
 
@@ -38,4 +39,4 @@ std::size_t RenderMesh::edgeCount() const {
   return edges.size();
 }
 
-} // namespace cartan::render
+} // namespace cartan::core

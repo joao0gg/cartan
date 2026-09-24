@@ -39,8 +39,7 @@ void Camera::pan(float dx, float dy) {
   const glm::vec3 right = glm::normalize(glm::cross(forward, CAMERA_UP_AXIS));
   const glm::vec3 up = glm::cross(right, forward);
 
-  const float unitsPerPixel = m_distance * CAMERA_PAN_SPEED;
-  m_target += (up * dy - right * dx) * unitsPerPixel;
+  m_target += (up * dy - right * dx) * (m_distance * CAMERA_PAN_SPEED);
 }
 
 void Camera::zoom(float steps) {

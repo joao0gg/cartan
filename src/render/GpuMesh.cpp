@@ -4,7 +4,7 @@
 
 namespace cartan::render {
 
-void GpuMesh::upload(GL &gl, const RenderMesh &mesh) {
+void GpuMesh::upload(GL &gl, const core::Mesh &mesh) {
   destroy(gl);
   if (mesh.empty()) {
     return;
@@ -18,7 +18,7 @@ void GpuMesh::upload(GL &gl, const RenderMesh &mesh) {
 
   gl.glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
   gl.glBufferData(GL_ARRAY_BUFFER,
-                  static_cast<GLsizeiptr>(mesh.vertices.size() * sizeof(RenderMesh::Vertex)),
+                  static_cast<GLsizeiptr>(mesh.vertices.size() * sizeof(core::Mesh::Vertex)),
                   mesh.vertices.data(), GL_STATIC_DRAW);
 
   gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
@@ -26,15 +26,15 @@ void GpuMesh::upload(GL &gl, const RenderMesh &mesh) {
                   static_cast<GLsizeiptr>(mesh.indices.size() * sizeof(std::uint32_t)),
                   mesh.indices.data(), GL_STATIC_DRAW);
 
-  constexpr auto stride = static_cast<GLsizei>(sizeof(RenderMesh::Vertex));
+  constexpr auto stride = static_cast<GLsizei>(sizeof(core::Mesh::Vertex));
 
   gl.glEnableVertexAttribArray(0);
   gl.glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride,
-                           reinterpret_cast<void *>(offsetof(RenderMesh::Vertex, position)));
+                           reinterpret_cast<void *>(offsetof(core::Mesh::Vertex, position)));
 
   gl.glEnableVertexAttribArray(1);
   gl.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
-                           reinterpret_cast<void *>(offsetof(RenderMesh::Vertex, normal)));
+                           reinterpret_cast<void *>(offsetof(core::Mesh::Vertex, normal)));
 
   gl.glBindVertexArray(0);
   m_indexCount = static_cast<int>(mesh.indices.size());

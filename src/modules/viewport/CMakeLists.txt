@@ -1,0 +1,9 @@
+cartan_module(viewport
+    SOURCES
+        FpsOverlay.cpp
+        Viewport.cpp
+        ViewportModule.cpp
+    LIBRARIES
+        cartan_render
+        Qt6::OpenGLWidgets
+)

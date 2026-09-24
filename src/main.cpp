@@ -1,7 +1,8 @@
 #include <QApplication>
 #include <QSurfaceFormat>
 
-#include "app/MainWindow.h"
+#include "core/Scene.h"
+#include "shell/MainWindow.h"
 
 int main(int argc, char **argv) {
   QSurfaceFormat format;
@@ -13,7 +14,9 @@ int main(int argc, char **argv) {
 
   QApplication app(argc, argv);
 
-  MainWindow window;
+  cartan::core::Scene scene;
+
+  cartan::shell::MainWindow window(scene);
   window.show();
 
   return app.exec();
