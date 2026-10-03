@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
+enable_testing()
+
 find_package(Qt6 REQUIRED COMPONENTS Core OpenGL Widgets OpenGLWidgets)
 find_package(assimp REQUIRED)
 find_package(glm REQUIRED)
@@ -31,3 +33,5 @@ foreach(module ${CARTAN_MODULES})
   get_filename_component(directory ${module} DIRECTORY)
   add_subdirectory(${directory})
 endforeach()
+
+add_subdirectory(tests)

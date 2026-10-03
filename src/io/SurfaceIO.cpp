@@ -1,7 +1,13 @@
 #include "io/SurfaceIO.h"
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <functional>
 #include <stdexcept>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -9,12 +15,29 @@
 
 namespace cartan::io {
 
+namespace {
+
+using PositionKey = std::array<float, 3>;
+
+struct PositionHash {
+  std::size_t operator()(const PositionKey &key) const {
+    std::size_t hash = 0;
+
+    for (const float value : key) {
+      hash = hash * 1000003u ^ std::hash<float>{}(value);
+    }
+
+    return hash;
+  }
+};
+
+} // namespace
+
 core::Mesh loadSurface(const std::filesystem::path &path) {
   Assimp::Importer importer;
   // clang-format off
   const aiScene *scene = importer.ReadFile(path.string(),
                                            aiProcess_Triangulate 
-                                           | aiProcess_GenSmoothNormals 
                                            | aiProcess_JoinIdenticalVertices 
                                            | aiProcess_FindDegenerates 
                                            | aiProcess_SortByPType
@@ -25,7 +48,11 @@ core::Mesh loadSurface(const std::filesystem::path &path) {
     throw std::runtime_error(importer.GetErrorString());
   }
 
-  core::Mesh out;
+  std::vector<glm::dvec3> positions;
+  std::vector<core::Mesh::Triangle> triangles;
+  std::unordered_map<PositionKey, std::uint32_t, PositionHash> welded;
+  std::vector<std::uint32_t> remap;
+
   for (unsigned int m = 0; m < scene->mNumMeshes; ++m) {
     const aiMesh *mesh = scene->mMeshes[m];
 
@@ -33,17 +60,19 @@ core::Mesh loadSurface(const std::filesystem::path &path) {
       continue;
     }
 
-    const auto base = static_cast<std::uint32_t>(out.vertices.size());
+    remap.resize(mesh->mNumVertices);
 
     for (unsigned int v = 0; v < mesh->mNumVertices; ++v) {
-      core::Mesh::Vertex vertex;
-      vertex.position = {mesh->mVertices[v].x, mesh->mVertices[v].y, mesh->mVertices[v].z};
+      const aiVector3D &vertex = mesh->mVertices[v];
+      const PositionKey key{vertex.x, vertex.y, vertex.z};
+      const auto [entry,
+                  inserted] = welded.try_emplace(key, static_cast<std::uint32_t>(positions.size()));
 
-      if (mesh->HasNormals()) {
-        vertex.normal = {mesh->mNormals[v].x, mesh->mNormals[v].y, mesh->mNormals[v].z};
+      if (inserted) {
+        positions.emplace_back(vertex.x, vertex.y, vertex.z);
       }
 
-      out.vertices.push_back(vertex);
+      remap[v] = entry->second;
     }
 
     for (unsigned int f = 0; f < mesh->mNumFaces; ++f) {
@@ -53,18 +82,22 @@ core::Mesh loadSurface(const std::filesystem::path &path) {
         continue;
       }
 
-      out.indices.push_back(base + face.mIndices[0]);
-      out.indices.push_back(base + face.mIndices[1]);
-      out.indices.push_back(base + face.mIndices[2]);
+      const core::Mesh::Triangle triangle{remap[face.mIndices[0]], remap[face.mIndices[1]],
+                                          remap[face.mIndices[2]]};
+
+      if (triangle[0] == triangle[1] || triangle[1] == triangle[2] || triangle[2] == triangle[0]) {
+        continue;
+      }
+
+      triangles.push_back(triangle);
     }
   }
 
-  if (out.empty()) {
+  if (triangles.empty()) {
     throw std::runtime_error("file contains no triangles");
   }
 
-  out.computeBounds();
-  return out;
+  return core::Mesh::fromTriangles(std::move(positions), std::move(triangles));
 }
 
 std::string supportedExtensions() {

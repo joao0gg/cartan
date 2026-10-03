@@ -3,10 +3,16 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 
-#include <limits>
 #include <string>
 
 namespace cartan::viewport {
+
+namespace {
+
+constexpr float kViewportOrbitSpeed = 0.4f;
+constexpr float kViewportWheelStep = 120.0f;
+
+} // namespace
 
 Viewport::Viewport(const core::Scene &scene, QWidget *parent)
     : QOpenGLWidget(parent), m_scene(scene) {
@@ -17,7 +23,7 @@ Viewport::Viewport(const core::Scene &scene, QWidget *parent)
 
 Viewport::~Viewport() {
   makeCurrent();
-  m_renderer.shutdown(*this);
+  m_renderer.reset();
   doneCurrent();
 }
 
@@ -25,15 +31,15 @@ void Viewport::onSceneChanged() {
   m_uploadPending = true;
 
   if (!m_scene.objects().empty()) {
-    glm::vec3 boundsMin(std::numeric_limits<float>::max());
-    glm::vec3 boundsMax(std::numeric_limits<float>::lowest());
+    core::Bounds sceneBounds = core::bounds(m_scene.objects().front().mesh);
 
     for (const auto &object : m_scene.objects()) {
-      boundsMin = glm::min(boundsMin, object.mesh.boundsMin);
-      boundsMax = glm::max(boundsMax, object.mesh.boundsMax);
+      const core::Bounds objectBounds = core::bounds(object.mesh);
+      sceneBounds.min = glm::min(sceneBounds.min, objectBounds.min);
+      sceneBounds.max = glm::max(sceneBounds.max, objectBounds.max);
     }
 
-    m_camera.frame(boundsMin, boundsMax);
+    m_camera.frame(glm::vec3(sceneBounds.min), glm::vec3(sceneBounds.max));
   }
 
   update();
@@ -43,24 +49,28 @@ void Viewport::initializeGL() {
   initializeOpenGLFunctions();
 
   std::string error;
-  if (!m_renderer.initialize(*this, error)) {
+  m_renderer = render::Renderer::create(*this, error);
+
+  if (!m_renderer) {
     qWarning("shader build failed: %s", error.c_str());
   }
 }
 
 void Viewport::paintGL() {
-  if (m_uploadPending) {
-    m_renderer.clearMeshes(*this);
+  if (m_renderer) {
+    if (m_uploadPending) {
+      m_renderer->clearMeshes();
 
-    for (const auto &object : m_scene.objects()) {
-      m_renderer.addMesh(*this, object.mesh);
+      for (const auto &object : m_scene.objects()) {
+        m_renderer->addMesh(object.mesh);
+      }
+
+      m_uploadPending = false;
     }
 
-    m_uploadPending = false;
+    m_renderer->draw(m_camera, static_cast<int>(width() * devicePixelRatioF()),
+                     static_cast<int>(height() * devicePixelRatioF()));
   }
-
-  m_renderer.draw(*this, m_camera, static_cast<int>(width() * devicePixelRatioF()),
-                  static_cast<int>(height() * devicePixelRatioF()));
 
   emit frameRendered();
 }
@@ -74,7 +84,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event) {
   m_lastMouse = event->pos();
 
   if (event->buttons() & Qt::LeftButton) {
-    m_camera.orbit(delta.x() * VIEWPORT_ORBIT_SPEED, delta.y() * VIEWPORT_ORBIT_SPEED);
+    m_camera.orbit(delta.x() * kViewportOrbitSpeed, delta.y() * kViewportOrbitSpeed);
   }
   else if (event->buttons() & Qt::MiddleButton) {
     m_camera.pan(static_cast<float>(delta.x()), static_cast<float>(delta.y()));
@@ -87,7 +97,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void Viewport::wheelEvent(QWheelEvent *event) {
-  m_camera.zoom(event->angleDelta().y() / VIEWPORT_WHEEL_STEP);
+  m_camera.zoom(event->angleDelta().y() / kViewportWheelStep);
   update();
 }
 

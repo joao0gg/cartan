@@ -5,9 +5,6 @@
 #include "core/Scene.h"
 #include "shell/Workbench.h"
 
-#define CARTAN_DEFAULT_WINDOW_WIDTH 1280
-#define CARTAN_DEFAULT_WINDOW_HEIGHT 800
-
 namespace cartan::shell {
 
 class MainWindow : public QMainWindow {

@@ -6,10 +6,17 @@
 
 namespace cartan::shell {
 
+namespace {
+
+constexpr int kDefaultWindowWidth = 1280;
+constexpr int kDefaultWindowHeight = 800;
+
+} // namespace
+
 MainWindow::MainWindow(core::Scene &scene, QWidget *parent)
     : QMainWindow(parent), m_workbench(*this, scene) {
   setWindowTitle("Cartan");
-  resize(CARTAN_DEFAULT_WINDOW_WIDTH, CARTAN_DEFAULT_WINDOW_HEIGHT);
+  resize(kDefaultWindowWidth, kDefaultWindowHeight);
 
   installModules(m_workbench);
 

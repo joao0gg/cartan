@@ -1,12 +1,14 @@
 #include "render/Shader.h"
 
-#include <glm/gtc/type_ptr.hpp>
+#include <utility>
 
-#define SHADER_LOG_SIZE 1024
+#include <glm/gtc/type_ptr.hpp>
 
 namespace cartan::render {
 
 namespace {
+
+constexpr int kShaderLogSize = 1024;
 
 bool compiled(GL &gl, unsigned int shader, std::string &error) {
   int ok = 0;
@@ -14,7 +16,7 @@ bool compiled(GL &gl, unsigned int shader, std::string &error) {
   gl.glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
 
   if (!ok) {
-    char log[SHADER_LOG_SIZE] = {};
+    char log[kShaderLogSize] = {};
     gl.glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
     error = log;
   }
@@ -28,7 +30,7 @@ bool linked(GL &gl, unsigned int program, std::string &error) {
   gl.glGetProgramiv(program, GL_LINK_STATUS, &ok);
 
   if (!ok) {
-    char log[SHADER_LOG_SIZE] = {};
+    char log[kShaderLogSize] = {};
     gl.glGetProgramInfoLog(program, sizeof(log), nullptr, log);
     error = log;
   }
@@ -51,51 +53,79 @@ unsigned int compile(GL &gl, unsigned int stage, const char *source, std::string
 
 } // namespace
 
-bool Shader::build(GL &gl, const char *vertexSource, const char *fragmentSource,
-                   std::string &error) {
+std::optional<Shader> Shader::build(GL &gl, const char *vertexSource, const char *fragmentSource,
+                                    std::string &error) {
   const unsigned int vertex = compile(gl, GL_VERTEX_SHADER, vertexSource, error);
   const unsigned int fragment = vertex ? compile(gl, GL_FRAGMENT_SHADER, fragmentSource, error) : 0;
 
-  if (vertex && fragment) {
-    m_program = gl.glCreateProgram();
-    gl.glAttachShader(m_program, vertex);
-    gl.glAttachShader(m_program, fragment);
-    gl.glLinkProgram(m_program);
+  std::optional<Shader> shader;
 
-    if (!linked(gl, m_program, error)) {
-      destroy(gl);
+  if (vertex && fragment) {
+    const unsigned int program = gl.glCreateProgram();
+    gl.glAttachShader(program, vertex);
+    gl.glAttachShader(program, fragment);
+    gl.glLinkProgram(program);
+
+    if (linked(gl, program, error)) {
+      shader.emplace(Shader(gl, program));
+    }
+    else {
+      gl.glDeleteProgram(program);
     }
   }
 
   gl.glDeleteShader(vertex);
   gl.glDeleteShader(fragment);
 
-  return m_program != 0;
+  return shader;
 }
 
-void Shader::destroy(GL &gl) {
-  if (m_program != 0) {
-    gl.glDeleteProgram(m_program);
-    m_program = 0;
+Shader::Shader(GL &gl, unsigned int program) : m_gl(&gl), m_program(program) {
+}
+
+Shader::~Shader() {
+  release();
+}
+
+Shader::Shader(Shader &&other) noexcept
+    : m_gl(std::exchange(other.m_gl, nullptr)), m_program(std::exchange(other.m_program, 0)) {
+}
+
+Shader &Shader::operator=(Shader &&other) noexcept {
+  if (this != &other) {
+    release();
+
+    m_gl = std::exchange(other.m_gl, nullptr);
+    m_program = std::exchange(other.m_program, 0);
   }
+
+  return *this;
 }
 
-void Shader::bind(GL &gl) const {
-  gl.glUseProgram(m_program);
+void Shader::release() {
+  if (m_gl != nullptr && m_program != 0) {
+    m_gl->glDeleteProgram(m_program);
+  }
+
+  m_program = 0;
 }
 
-void Shader::setMat4(GL &gl, const char *name, const glm::mat4 &value) const {
-  gl.glUniformMatrix4fv(gl.glGetUniformLocation(m_program, name), 1, GL_FALSE,
-                        glm::value_ptr(value));
+void Shader::bind() const {
+  m_gl->glUseProgram(m_program);
 }
 
-void Shader::setMat3(GL &gl, const char *name, const glm::mat3 &value) const {
-  gl.glUniformMatrix3fv(gl.glGetUniformLocation(m_program, name), 1, GL_FALSE,
-                        glm::value_ptr(value));
+void Shader::setMat4(const char *name, const glm::mat4 &value) const {
+  m_gl->glUniformMatrix4fv(m_gl->glGetUniformLocation(m_program, name), 1, GL_FALSE,
+                           glm::value_ptr(value));
 }
 
-void Shader::setVec3(GL &gl, const char *name, const glm::vec3 &value) const {
-  gl.glUniform3fv(gl.glGetUniformLocation(m_program, name), 1, glm::value_ptr(value));
+void Shader::setMat3(const char *name, const glm::mat3 &value) const {
+  m_gl->glUniformMatrix3fv(m_gl->glGetUniformLocation(m_program, name), 1, GL_FALSE,
+                           glm::value_ptr(value));
+}
+
+void Shader::setVec3(const char *name, const glm::vec3 &value) const {
+  m_gl->glUniform3fv(m_gl->glGetUniformLocation(m_program, name), 1, glm::value_ptr(value));
 }
 
 } // namespace cartan::render

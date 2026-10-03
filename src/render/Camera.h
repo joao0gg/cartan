@@ -2,22 +2,13 @@
 
 #include <glm/glm.hpp>
 
-#define CAMERA_UP_AXIS glm::vec3(0.0f, 1.0f, 0.0f)
-#define CAMERA_FOV 45.0f
-#define CAMERA_DEFAULT_DISTANCE 5.0f
-#define CAMERA_DEFAULT_YAW 45.0f
-#define CAMERA_DEFAULT_PITCH 25.0f
-#define CAMERA_PITCH_LIMIT 89.0f
-#define CAMERA_PAN_SPEED 0.002f
-#define CAMERA_ZOOM_PER_STEP 0.9f
-#define CAMERA_MIN_DISTANCE 1.0e-4f
-#define CAMERA_MAX_DISTANCE 1.0e6f
-#define CAMERA_MIN_ASPECT 0.001f
-#define CAMERA_FRAME_MARGIN 1.2f
-#define CAMERA_NEAR_RATIO 0.001f
-#define CAMERA_FAR_RATIO 100.0f
-
 namespace cartan::render {
+
+constexpr float kCameraDefaultDistance = 5.0f;
+constexpr float kCameraDefaultYaw = 45.0f;
+constexpr float kCameraDefaultPitch = 25.0f;
+constexpr float kCameraNearRatio = 0.001f;
+constexpr float kCameraFarRatio = 100.0f;
 
 class Camera {
 public:
@@ -32,11 +23,11 @@ public:
 
 private:
   glm::vec3 m_target{0.0f};
-  float m_distance = CAMERA_DEFAULT_DISTANCE;
-  float m_yaw = CAMERA_DEFAULT_YAW;
-  float m_pitch = CAMERA_DEFAULT_PITCH;
-  float m_nearPlane = CAMERA_DEFAULT_DISTANCE * CAMERA_NEAR_RATIO;
-  float m_farPlane = CAMERA_DEFAULT_DISTANCE * CAMERA_FAR_RATIO;
+  float m_distance = kCameraDefaultDistance;
+  float m_yaw = kCameraDefaultYaw;
+  float m_pitch = kCameraDefaultPitch;
+  float m_nearPlane = kCameraDefaultDistance * kCameraNearRatio;
+  float m_farPlane = kCameraDefaultDistance * kCameraFarRatio;
 };
 
 } // namespace cartan::render

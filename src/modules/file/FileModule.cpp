@@ -27,9 +27,9 @@ void openFile(QWidget *window, cartan::core::Scene &scene) {
 
     const QString summary = QString("Loaded \"%1\" (%2 points, %3 edges, %4 faces)")
                                 .arg(name)
-                                .arg(mesh.vertices.size())
-                                .arg(mesh.edgeCount())
-                                .arg(mesh.indices.size() / 3);
+                                .arg(mesh.positions().size())
+                                .arg(mesh.edges().size())
+                                .arg(mesh.triangles().size());
 
     scene.clear();
     scene.add(name.toStdString(), std::move(mesh));

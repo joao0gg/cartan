@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -9,22 +10,21 @@
 #include "render/GpuMesh.h"
 #include "render/Shader.h"
 
-#define RENDERER_CLEAR_COLOR 0.13f, 0.14f, 0.16f, 1.0f
-#define RENDERER_SURFACE_COLOR glm::vec3(0.72f, 0.74f, 0.78f)
-
 namespace cartan::render {
 
 class Renderer {
 public:
-  bool initialize(GL &gl, std::string &error);
-  void shutdown(GL &gl);
+  static std::optional<Renderer> create(GL &gl, std::string &error);
 
-  void addMesh(GL &gl, const core::Mesh &mesh);
-  void clearMeshes(GL &gl);
+  void addMesh(const core::Mesh &mesh);
+  void clearMeshes();
 
-  void draw(GL &gl, const Camera &camera, int width, int height);
+  void draw(const Camera &camera, int width, int height);
 
 private:
+  Renderer(GL &gl, Shader surface);
+
+  GL *m_gl = nullptr;
   Shader m_surface;
   std::vector<GpuMesh> m_meshes;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <vector>
 
@@ -7,24 +8,54 @@
 
 namespace cartan::core {
 
-struct Mesh {
-  struct Vertex {
-    glm::vec3 position{0.0f};
-    glm::vec3 normal{0.0f};
-  };
+class Mesh {
+public:
+  using Triangle = std::array<std::uint32_t, 3>;
+  using Edge = std::array<std::uint32_t, 2>;
+  using TriangleEdges = std::array<std::uint32_t, 3>;
+  using TriangleEdgeSigns = std::array<std::int8_t, 3>;
 
-  std::vector<Vertex> vertices;
-  std::vector<std::uint32_t> indices;
+  static Mesh fromTriangles(std::vector<glm::dvec3> positions, std::vector<Triangle> triangles);
 
-  glm::vec3 boundsMin{0.0f};
-  glm::vec3 boundsMax{0.0f};
-
-  void computeBounds();
-  bool empty() const {
-    return indices.empty();
+  const std::vector<glm::dvec3> &positions() const {
+    return m_positions;
   }
 
-  std::size_t edgeCount() const;
+  const std::vector<Triangle> &triangles() const {
+    return m_triangles;
+  }
+
+  const std::vector<Edge> &edges() const {
+    return m_edges;
+  }
+
+  const std::vector<TriangleEdges> &triangleEdges() const {
+    return m_triangleEdges;
+  }
+
+  const std::vector<TriangleEdgeSigns> &triangleEdgeSigns() const {
+    return m_triangleEdgeSigns;
+  }
+
+  bool empty() const {
+    return m_triangles.empty();
+  }
+
+private:
+  Mesh() = default;
+
+  std::vector<glm::dvec3> m_positions;
+  std::vector<Triangle> m_triangles;
+  std::vector<Edge> m_edges;
+  std::vector<TriangleEdges> m_triangleEdges;
+  std::vector<TriangleEdgeSigns> m_triangleEdgeSigns;
 };
+
+struct Bounds {
+  glm::dvec3 min{0.0};
+  glm::dvec3 max{0.0};
+};
+
+Bounds bounds(const Mesh &mesh);
 
 } // namespace cartan::core

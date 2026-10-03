@@ -4,12 +4,11 @@
 #include <QOpenGLWidget>
 #include <QPoint>
 
+#include <optional>
+
 #include "core/Scene.h"
 #include "render/Camera.h"
 #include "render/Renderer.h"
-
-#define VIEWPORT_ORBIT_SPEED 0.4f
-#define VIEWPORT_WHEEL_STEP 120.0f
 
 namespace cartan::viewport {
 
@@ -35,7 +34,7 @@ private:
   void onSceneChanged();
 
   const core::Scene &m_scene;
-  render::Renderer m_renderer;
+  std::optional<render::Renderer> m_renderer;
   render::Camera m_camera;
   bool m_uploadPending = false;
   QPoint m_lastMouse;

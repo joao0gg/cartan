@@ -2,9 +2,6 @@
 
 #include <QLabel>
 
-#define FPS_OVERLAY_INTERVAL 1000 // ms
-#define FPS_OVERLAY_MARGIN 8
-
 namespace cartan::viewport {
 
 class Viewport;

@@ -1,0 +1,4 @@
+add_executable(cartan_core_tests MeshTests.cpp)
+target_link_libraries(cartan_core_tests PRIVATE cartan_core)
+
+add_test(NAME cartan_core_tests COMMAND cartan_core_tests)

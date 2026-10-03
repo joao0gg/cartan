@@ -1,6 +1,7 @@
 add_library(cartan_render STATIC
     Camera.cpp
     GpuMesh.cpp
+    RenderMesh.cpp
     Renderer.cpp
     Shader.cpp
 )
