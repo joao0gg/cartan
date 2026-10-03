@@ -12,18 +12,19 @@ find_package(assimp REQUIRED)
 find_package(glm REQUIRED)
 
 add_subdirectory(src/core)
+add_subdirectory(src/app)
 add_subdirectory(src/io)
 add_subdirectory(src/render)
-add_subdirectory(src/shell)
+add_subdirectory(src/gui)
 
 add_executable(cartan src/main.cpp)
-target_link_libraries(cartan PRIVATE cartan_shell)
+target_link_libraries(cartan PRIVATE cartan_gui)
 
 function(cartan_module name)
   cmake_parse_arguments(MODULE "" "" "SOURCES;LIBRARIES" ${ARGN})
 
   add_library(cartan_module_${name} OBJECT ${MODULE_SOURCES})
-  target_link_libraries(cartan_module_${name} PRIVATE cartan_shell ${MODULE_LIBRARIES})
+  target_link_libraries(cartan_module_${name} PRIVATE cartan_gui ${MODULE_LIBRARIES})
   target_link_libraries(cartan PRIVATE cartan_module_${name})
 endfunction()
 

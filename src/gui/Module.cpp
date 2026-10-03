@@ -1,9 +1,9 @@
-#include "shell/Module.h"
+#include "gui/Module.h"
 
 #include <algorithm>
 #include <vector>
 
-namespace cartan::shell {
+namespace cartan::gui {
 
 namespace {
 
@@ -35,4 +35,4 @@ void installModules(Workbench &workbench) {
   }
 }
 
-} // namespace cartan::shell
+} // namespace cartan::gui

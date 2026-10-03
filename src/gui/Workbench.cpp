@@ -1,19 +1,19 @@
-#include "shell/Workbench.h"
+#include "gui/Workbench.h"
 
 #include <QDockWidget>
 #include <QMainWindow>
 #include <QMenuBar>
 
-namespace cartan::shell {
+namespace cartan::gui {
 
-Workbench::Workbench(QMainWindow &window, core::Scene &scene) : m_window(window), m_scene(scene) {
+Workbench::Workbench(QMainWindow &window, app::Scene &scene) : m_window(window), m_scene(scene) {
 }
 
 QWidget *Workbench::window() const {
   return &m_window;
 }
 
-core::Scene &Workbench::scene() const {
+app::Scene &Workbench::scene() const {
   return m_scene;
 }
 
@@ -37,4 +37,4 @@ void Workbench::setCentralWidget(QWidget *widget) {
   m_window.setCentralWidget(widget);
 }
 
-} // namespace cartan::shell
+} // namespace cartan::gui

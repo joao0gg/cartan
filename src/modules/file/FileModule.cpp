@@ -5,13 +5,13 @@
 #include <exception>
 #include <utility>
 
-#include "core/Scene.h"
+#include "app/Scene.h"
+#include "gui/Module.h"
 #include "io/SurfaceIO.h"
-#include "shell/Module.h"
 
 namespace {
 
-void openFile(QWidget *window, cartan::core::Scene &scene) {
+void openFile(QWidget *window, cartan::app::Scene &scene) {
   const QString filter = QString("Mesh (%1)")
                              .arg(QString::fromStdString(cartan::io::supportedExtensions()));
 
@@ -41,15 +41,15 @@ void openFile(QWidget *window, cartan::core::Scene &scene) {
   }
 }
 
-void install(cartan::shell::Workbench &workbench) {
+void install(cartan::gui::Workbench &workbench) {
   QWidget *window = workbench.window();
-  cartan::core::Scene &scene = workbench.scene();
+  cartan::app::Scene &scene = workbench.scene();
 
   workbench.menu("&File")->addAction("&Open...", QKeySequence::Open, window, [window, &scene]() {
     openFile(window, scene);
   });
 }
 
-const bool registered = cartan::shell::registerModule(10, install);
+const bool registered = cartan::gui::registerModule(10, install);
 
 } // namespace

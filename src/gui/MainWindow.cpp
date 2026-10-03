@@ -1,10 +1,10 @@
-#include "shell/MainWindow.h"
+#include "gui/MainWindow.h"
 
 #include <QMenu>
 
-#include "shell/Module.h"
+#include "gui/Module.h"
 
-namespace cartan::shell {
+namespace cartan::gui {
 
 namespace {
 
@@ -13,7 +13,7 @@ constexpr int kDefaultWindowHeight = 800;
 
 } // namespace
 
-MainWindow::MainWindow(core::Scene &scene, QWidget *parent)
+MainWindow::MainWindow(app::Scene &scene, QWidget *parent)
     : QMainWindow(parent), m_workbench(*this, scene) {
   setWindowTitle("Cartan");
   resize(kDefaultWindowWidth, kDefaultWindowHeight);
@@ -31,4 +31,4 @@ MainWindow::MainWindow(core::Scene &scene, QWidget *parent)
   qInfo("Ready");
 }
 
-} // namespace cartan::shell
+} // namespace cartan::gui

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "shell/Workbench.h"
+#include "gui/Workbench.h"
 
-namespace cartan::shell {
+namespace cartan::gui {
 
 using ModuleInstaller = void (*)(Workbench &workbench);
 
 bool registerModule(int order, ModuleInstaller install);
 void installModules(Workbench &workbench);
 
-} // namespace cartan::shell
+} // namespace cartan::gui

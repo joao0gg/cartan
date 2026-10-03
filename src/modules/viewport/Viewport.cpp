@@ -14,14 +14,17 @@ constexpr float kViewportWheelStep = 120.0f;
 
 } // namespace
 
-Viewport::Viewport(const core::Scene &scene, QWidget *parent)
-    : QOpenGLWidget(parent), m_scene(scene) {
+Viewport::Viewport(app::Scene &scene, QWidget *parent) : QOpenGLWidget(parent), m_scene(scene) {
   setFocusPolicy(Qt::StrongFocus);
 
-  connect(&m_scene, &core::Scene::changed, this, &Viewport::onSceneChanged);
+  m_sceneListener = m_scene.subscribe([this]() {
+    onSceneChanged();
+  });
 }
 
 Viewport::~Viewport() {
+  m_scene.unsubscribe(m_sceneListener);
+
   makeCurrent();
   m_renderer.reset();
   doneCurrent();

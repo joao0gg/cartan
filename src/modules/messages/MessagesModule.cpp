@@ -1,7 +1,7 @@
 #include <QPlainTextEdit>
 #include <QPointer>
 
-#include "shell/Module.h"
+#include "gui/Module.h"
 
 namespace {
 
@@ -20,7 +20,7 @@ void handleMessage(QtMsgType type, const QMessageLogContext &context, const QStr
   }
 }
 
-void install(cartan::shell::Workbench &workbench) {
+void install(cartan::gui::Workbench &workbench) {
   messages = new QPlainTextEdit;
   messages->setReadOnly(true);
 
@@ -29,6 +29,6 @@ void install(cartan::shell::Workbench &workbench) {
   workbench.addPanel("Messages", messages, Qt::BottomDockWidgetArea);
 }
 
-const bool registered = cartan::shell::registerModule(40, install);
+const bool registered = cartan::gui::registerModule(40, install);
 
 } // namespace

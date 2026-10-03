@@ -6,7 +6,7 @@
 
 #include <optional>
 
-#include "core/Scene.h"
+#include "app/Scene.h"
 #include "render/Camera.h"
 #include "render/Renderer.h"
 
@@ -16,7 +16,7 @@ class Viewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
   Q_OBJECT
 
 public:
-  explicit Viewport(const core::Scene &scene, QWidget *parent = nullptr);
+  explicit Viewport(app::Scene &scene, QWidget *parent = nullptr);
   ~Viewport() override;
 
 signals:
@@ -33,7 +33,8 @@ protected:
 private:
   void onSceneChanged();
 
-  const core::Scene &m_scene;
+  app::Scene &m_scene;
+  app::Scene::ListenerId m_sceneListener = 0;
   std::optional<render::Renderer> m_renderer;
   render::Camera m_camera;
   bool m_uploadPending = false;
