@@ -1,3 +1,5 @@
+![Cartan](doc/img/cartan-logo-light.svg)
+
 # Cartan
 
-A multiphysics simulation engine.
+Cartan is a multiphysics engine based on finite element exterior calculus (FEEC), named after the French mathematician Élie Cartan.
