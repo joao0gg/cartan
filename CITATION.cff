@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use Cartan in your research, please cite it as below."
+title: "Cartan"
+type: software
+authors:
+  - family-names: "Abrahão Franco"
+    given-names: "João Gabriel"
+license: AGPL-3.0-or-later
+repository-code: "https://github.com/joao0gg/Cartan"
