@@ -5,112 +5,106 @@
 #include "io/SurfaceIO.h"
 
 #include <algorithm>
-#include <array>
-#include <cstddef>
-#include <functional>
+#include <cctype>
+#include <fstream>
 #include <stdexcept>
-#include <unordered_map>
-#include <utility>
+#include <string>
 #include <vector>
-
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
 
 namespace cartan::io {
 
 namespace {
 
-using PositionKey = std::array<float, 3>;
+std::string readFile(const std::filesystem::path &path) {
+  std::ifstream file(path, std::ios::binary | std::ios::ate);
 
-struct PositionHash {
-  std::size_t operator()(const PositionKey &key) const {
-    std::size_t hash = 0;
-
-    for (const float value : key) {
-      hash = hash * 1000003u ^ std::hash<float>{}(value);
-    }
-
-    return hash;
+  if (!file) {
+    throw std::runtime_error("cannot open " + path.string());
   }
-};
+
+  const std::streamsize size = file.tellg();
+  std::string bytes(static_cast<std::size_t>(size), '\0');
+  file.seekg(0);
+  file.read(bytes.data(), size);
+
+  if (!file) {
+    throw std::runtime_error("failed to read " + path.string());
+  }
+
+  return bytes;
+}
+
+std::string lowercaseExtension(const std::filesystem::path &path) {
+  std::string extension = path.extension().string();
+  std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+
+  return extension;
+}
 
 } // namespace
 
-core::Mesh loadSurface(const std::filesystem::path &path) {
-  Assimp::Importer importer;
-  // clang-format off
-  const aiScene *scene = importer.ReadFile(path.string(),
-                                           aiProcess_Triangulate 
-                                           | aiProcess_JoinIdenticalVertices 
-                                           | aiProcess_FindDegenerates 
-                                           | aiProcess_SortByPType
-                                           | aiProcess_ImproveCacheLocality);
-  // clang-format on
+std::span<const std::uint32_t> SurfaceData::face(std::size_t f) const {
+  return std::span(faceVertices).subspan(faceOffsets[f], faceOffsets[f + 1] - faceOffsets[f]);
+}
 
-  if (scene == nullptr || scene->mRootNode == nullptr) {
-    throw std::runtime_error(importer.GetErrorString());
+void SurfaceData::addFace(std::span<const std::uint32_t> vertices) {
+  faceVertices.insert(faceVertices.end(), vertices.begin(), vertices.end());
+  faceOffsets.push_back(faceVertices.size());
+}
+
+SurfaceData readSurface(const std::filesystem::path &path) {
+  const std::string extension = lowercaseExtension(path);
+
+  if (extension != ".ply" && extension != ".obj" && extension != ".off") {
+    throw std::runtime_error("unsupported file extension \"" + extension + "\"");
   }
 
-  std::vector<glm::dvec3> positions;
+  const std::string bytes = readFile(path);
+
+  if (extension == ".ply") {
+    return parsePly(bytes);
+  }
+
+  if (extension == ".obj") {
+    return parseObj(bytes);
+  }
+
+  return parseOff(bytes);
+}
+
+core::Mesh toTriangleMesh(const SurfaceData &surface) {
   std::vector<core::Mesh::Triangle> triangles;
-  std::unordered_map<PositionKey, std::uint32_t, PositionHash> welded;
-  std::vector<std::uint32_t> remap;
+  triangles.reserve(surface.faceCount());
 
-  for (unsigned int m = 0; m < scene->mNumMeshes; ++m) {
-    const aiMesh *mesh = scene->mMeshes[m];
+  for (std::size_t f = 0; f < surface.faceCount(); ++f) {
+    const auto face = surface.face(f);
 
-    if ((mesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE) == 0) {
-      continue;
+    if (face.size() != 3) {
+      throw std::invalid_argument("face " + std::to_string(f) + " has " +
+                                  std::to_string(face.size()) +
+                                  " vertices; a triangle mesh needs triangles only");
     }
 
-    remap.resize(mesh->mNumVertices);
-
-    for (unsigned int v = 0; v < mesh->mNumVertices; ++v) {
-      const aiVector3D &vertex = mesh->mVertices[v];
-      const PositionKey key{vertex.x, vertex.y, vertex.z};
-      const auto [entry,
-                  inserted] = welded.try_emplace(key, static_cast<std::uint32_t>(positions.size()));
-
-      if (inserted) {
-        positions.emplace_back(vertex.x, vertex.y, vertex.z);
-      }
-
-      remap[v] = entry->second;
-    }
-
-    for (unsigned int f = 0; f < mesh->mNumFaces; ++f) {
-      const aiFace &face = mesh->mFaces[f];
-
-      if (face.mNumIndices != 3) {
-        continue;
-      }
-
-      const core::Mesh::Triangle triangle{remap[face.mIndices[0]], remap[face.mIndices[1]],
-                                          remap[face.mIndices[2]]};
-
-      if (triangle[0] == triangle[1] || triangle[1] == triangle[2] || triangle[2] == triangle[0]) {
-        continue;
-      }
-
-      triangles.push_back(triangle);
-    }
+    triangles.push_back({face[0], face[1], face[2]});
   }
 
-  if (triangles.empty()) {
-    throw std::runtime_error("file contains no triangles");
+  return core::Mesh::fromTriangles(surface.positions, std::move(triangles));
+}
+
+core::Mesh loadSurface(const std::filesystem::path &path) {
+  const SurfaceData surface = readSurface(path);
+
+  if (surface.faceCount() == 0) {
+    throw std::runtime_error("file contains no faces");
   }
 
-  return core::Mesh::fromTriangles(std::move(positions), std::move(triangles));
+  return toTriangleMesh(surface);
 }
 
 std::string supportedExtensions() {
-  Assimp::Importer importer;
-  std::string list;
-  importer.GetExtensionList(list);
-  std::replace(list.begin(), list.end(), ';', ' ');
-
-  return list;
+  return "*.ply *.obj *.off";
 }
 
 } // namespace cartan::io
