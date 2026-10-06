@@ -13,6 +13,7 @@ find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
 add_subdirectory(src/core)
 add_subdirectory(src/geometry)
+add_subdirectory(src/discretization)
 add_subdirectory(src/app)
 add_subdirectory(src/io)
 
