@@ -3,6 +3,7 @@ function(cartan_test name)
 
   add_executable(${name} ${TEST_SOURCES})
   target_link_libraries(${name} PRIVATE ${TEST_LIBRARIES})
+  target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
@@ -11,3 +12,4 @@ cartan_test(cartan_complex_tests SOURCES core/SimplicialComplexTests.cpp LIBRARI
 cartan_test(cartan_io_tests SOURCES io/IoTests.cpp LIBRARIES cartan_io)
 cartan_test(cartan_metric_tests SOURCES geometry/MetricTests.cpp LIBRARIES cartan_geometry)
 cartan_test(cartan_discretization_tests SOURCES discretization/DiscretizationTests.cpp LIBRARIES cartan_discretization)
+cartan_test(cartan_solver_tests SOURCES solvers/LinearSolverTests.cpp LIBRARIES cartan_solvers cartan_discretization)
