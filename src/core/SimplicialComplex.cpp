@@ -62,13 +62,14 @@ void checkTopSimplices(std::span<const Index> vertices, Index vertexCount) {
 }
 
 template <std::size_t FaceSize>
-void buildFaces(std::span<const Index> cofaces, std::vector<Index> &faces, SparseMatrix &d,
-                Index faceCount) {
+void buildFaces(std::span<const Index> cofaces, std::vector<Index> &faces,
+                std::vector<Index> &cofaceFaces, SparseMatrix &d, Index faceCount) {
   constexpr std::size_t cofaceSize = FaceSize + 1;
   const std::size_t cofaceCount = cofaces.size() / cofaceSize;
   detail::FlatTable<FaceSize> table(FaceSize == 1 ? 0 : cofaceCount * cofaceSize / 2);
   std::vector<Eigen::Triplet<double, Index>> entries;
   entries.reserve(cofaces.size());
+  cofaceFaces.reserve(cofaces.size());
 
   for (std::size_t s = 0; s < cofaceCount; ++s) {
     const auto coface = cofaces.subspan(s * cofaceSize, cofaceSize);
@@ -98,6 +99,7 @@ void buildFaces(std::span<const Index> cofaces, std::vector<Index> &faces, Spars
         index = found;
       }
 
+      cofaceFaces.push_back(index);
       entries.emplace_back(static_cast<Index>(s), index, static_cast<double>(sign));
     }
   }
@@ -156,13 +158,13 @@ SimplicialComplex SimplicialComplex::fromTopSimplices(int dimension, Index verte
 
     switch (k) {
     case 0:
-      buildFaces<1>(cofaces, faces, complex.m_d[0], vertexCount);
+      buildFaces<1>(cofaces, faces, complex.m_faces[1], complex.m_d[0], vertexCount);
       break;
     case 1:
-      buildFaces<2>(cofaces, faces, complex.m_d[1], 0);
+      buildFaces<2>(cofaces, faces, complex.m_faces[2], complex.m_d[1], 0);
       break;
     default:
-      buildFaces<3>(cofaces, faces, complex.m_d[2], 0);
+      buildFaces<3>(cofaces, faces, complex.m_faces[3], complex.m_d[2], 0);
       break;
     }
   }
@@ -185,6 +187,17 @@ std::span<const Index> SimplicialComplex::simplex(int k, Index i) const {
   const std::size_t size = static_cast<std::size_t>(k) + 1;
 
   return std::span(m_simplices[k]).subspan(static_cast<std::size_t>(i) * size, size);
+}
+
+std::span<const Index> SimplicialComplex::faces(int k, Index i) const {
+  if (k < 1 || k > m_dimension) {
+    throw std::out_of_range("no faces of " + std::to_string(k) +
+                            "-simplices in a complex of dimension " + std::to_string(m_dimension));
+  }
+
+  const std::size_t size = static_cast<std::size_t>(k) + 1;
+
+  return std::span(m_faces[k]).subspan(static_cast<std::size_t>(i) * size, size);
 }
 
 const SparseMatrix &SimplicialComplex::d(int k) const {

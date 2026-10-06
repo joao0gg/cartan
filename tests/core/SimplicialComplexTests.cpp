@@ -184,6 +184,41 @@ void testOrderAndOrientation() {
   expect(negated, "reversing a triangle negates its row of d");
 }
 
+void testFaces() {
+  const auto triangle = build(2, 3, {0, 1, 2});
+  const auto edges = triangle.faces(2, 0);
+  bool opposite = true;
+
+  for (int corner = 0; corner < 3; ++corner) {
+    const auto edge = triangle.simplex(1, edges[corner]);
+    opposite = opposite && edge[0] != corner && edge[1] != corner;
+  }
+
+  expect(opposite, "face j of a simplex is opposite its vertex j");
+  expect(triangle.faces(1, 0)[0] == triangle.simplex(1, 0)[1] &&
+             triangle.faces(1, 0)[1] == triangle.simplex(1, 0)[0],
+         "faces of an edge are its vertices in boundary order");
+
+  const auto two = build(3, 5, {0, 1, 2, 3, 1, 2, 3, 4});
+  bool matchesD = true;
+
+  for (int k = 1; k <= two.dimension(); ++k) {
+    const SparseMatrix d = two.d(k - 1);
+
+    for (Index i = 0; i < two.count(k); ++i) {
+      for (const Index face : two.faces(k, i)) {
+        matchesD = matchesD && d.coeff(i, face) != 0.0;
+      }
+    }
+  }
+
+  expect(matchesD, "faces agree with the nonzeros of d");
+  expect(throws([&] {
+           triangle.faces(0, 0);
+         }),
+         "vertices have no faces");
+}
+
 void testErrors() {
   expect(throws([] {
            build(2, 3, {0, 1, 1});
@@ -220,6 +255,7 @@ int main() {
   testTetrahedra();
   testNonmanifold();
   testOrderAndOrientation();
+  testFaces();
   testErrors();
 
   return failures == 0 ? 0 : 1;

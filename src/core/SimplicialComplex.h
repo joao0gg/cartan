@@ -22,6 +22,7 @@ public:
   int dimension() const;
   Index count(int k) const;
   std::span<const Index> simplex(int k, Index i) const;
+  std::span<const Index> faces(int k, Index i) const;
 
   const SparseMatrix &d(int k) const;
 
@@ -34,6 +35,7 @@ private:
 
   int m_dimension = 0;
   std::array<std::vector<Index>, maxDimension + 1> m_simplices;
+  std::array<std::vector<Index>, maxDimension + 1> m_faces;
   std::array<SparseMatrix, maxDimension> m_d;
 };
 
