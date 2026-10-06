@@ -9,6 +9,7 @@ option(CARTAN_BUILD_GUI "Build the Qt application" ON)
 enable_testing()
 
 find_package(glm REQUIRED)
+find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
 add_subdirectory(src/core)
 add_subdirectory(src/app)
