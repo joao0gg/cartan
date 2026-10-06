@@ -1,3 +1,4 @@
 build/
 
-assets/*.patch
+assets/
+*.patch
