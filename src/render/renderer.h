@@ -1,8 +1,13 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
+#include "render/camera/camera.h"
+
 namespace cartan::render {
+
+class Grid;
 
 using GLProc = void (*)();
 using GLLoader = GLProc (*)(const char *name);
@@ -16,16 +21,23 @@ struct GLInfo {
 
 class Renderer {
 public:
-  bool initialize(GLLoader loader);
+  Renderer();
+  ~Renderer();
+
+  void initialize(GLLoader loader);
+  void release();
+
   const GLInfo &info() const;
 
   void resize(int width, int height);
-  void render(unsigned int framebuffer);
+  void render(unsigned int framebuffer, const Camera &camera);
 
 private:
   GLInfo m_info;
   int m_width = 0;
   int m_height = 0;
+
+  std::unique_ptr<Grid> m_grid;
 };
 
 } // namespace cartan::render

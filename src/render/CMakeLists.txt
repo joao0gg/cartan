@@ -1,6 +1,38 @@
-add_library(cartan_render STATIC
-    renderer.cpp
+find_package(glm REQUIRED)
+
+set(SHADERS
+    grid.vert
+    grid.frag
 )
 
-target_include_directories(cartan_render PUBLIC ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(cartan_render PRIVATE glad)
+foreach(shader ${SHADERS})
+  set(input ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${shader})
+  set(output ${CMAKE_CURRENT_BINARY_DIR}/shaders/${shader}.h)
+
+  add_custom_command(
+      OUTPUT ${output}
+      COMMAND ${CMAKE_COMMAND} -DINPUT=${input} -DOUTPUT=${output} -P ${PROJECT_SOURCE_DIR}/cmake/embed.cmake
+      DEPENDS ${input} ${PROJECT_SOURCE_DIR}/cmake/embed.cmake
+  )
+
+  list(APPEND SHADER_HEADERS ${output})
+endforeach()
+
+add_library(cartan_render STATIC
+    renderer.cpp
+    grid.cpp
+    gl/program.cpp
+    camera/camera.cpp
+    camera/orbitcontroller.cpp
+    ${SHADER_HEADERS}
+)
+
+target_include_directories(cartan_render
+    PUBLIC ${PROJECT_SOURCE_DIR}/src
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+target_link_libraries(cartan_render
+    PUBLIC glm::glm
+    PRIVATE glad
+)

@@ -1,6 +1,10 @@
 #include "render/renderer.h"
 
+#include <stdexcept>
+
 #include <glad/gl.h>
+
+#include "render/grid.h"
 
 namespace cartan::render {
 
@@ -17,11 +21,14 @@ std::string glString(GLenum name) {
 
 } // namespace
 
-bool Renderer::initialize(GLLoader loader) {
+Renderer::Renderer() = default;
+Renderer::~Renderer() = default;
+
+void Renderer::initialize(GLLoader loader) {
   const int version = gladLoadGL(loader);
 
   if (version == 0) {
-    return false;
+    throw std::runtime_error("Failed to load OpenGL");
   }
 
   m_info.vendor = glString(GL_VENDOR);
@@ -32,7 +39,17 @@ bool Renderer::initialize(GLLoader loader) {
   const int major = GLAD_VERSION_MAJOR(version);
   const int minor = GLAD_VERSION_MINOR(version);
 
-  return major > kRequiredMajor || (major == kRequiredMajor && minor >= kRequiredMinor);
+  if (major < kRequiredMajor || (major == kRequiredMajor && minor < kRequiredMinor)) {
+    throw std::runtime_error("OpenGL 4.1 core is not available (got " + m_info.version + ")");
+  }
+
+  glEnable(GL_DEPTH_TEST);
+
+  m_grid = std::make_unique<Grid>();
+}
+
+void Renderer::release() {
+  m_grid.reset();
 }
 
 const GLInfo &Renderer::info() const {
@@ -44,12 +61,16 @@ void Renderer::resize(int width, int height) {
   m_height = height;
 }
 
-void Renderer::render(unsigned int framebuffer) {
+void Renderer::render(unsigned int framebuffer, const Camera &camera) {
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
   glViewport(0, 0, m_width, m_height);
 
-  glClearColor(0.1f, 0.1f, 0.12f, 1.0f);
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  if (m_grid) {
+    m_grid->draw(camera);
+  }
 }
 
 } // namespace cartan::render
