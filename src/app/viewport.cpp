@@ -27,6 +27,11 @@ Viewport::~Viewport() {
   doneCurrent();
 }
 
+void Viewport::setTheme(const render::Theme &theme) {
+  m_renderer.setTheme(theme);
+  update();
+}
+
 void Viewport::initializeGL() {
   try {
     m_renderer.initialize(loadProc);

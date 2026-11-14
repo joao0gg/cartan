@@ -11,7 +11,6 @@ namespace cartan::render {
 
 namespace {
 
-constexpr float kCellSize = 1.0f;
 constexpr float kFadeRatio = 10.0f;
 
 } // namespace
@@ -24,7 +23,7 @@ Grid::~Grid() {
   glDeleteVertexArrays(1, &m_vertexArray);
 }
 
-void Grid::draw(const Camera &camera) const {
+void Grid::draw(const Camera &camera, const GridStyle &style) const {
   const glm::mat4 viewProjection = camera.projection() * camera.view();
   const float distance = glm::length(camera.position - camera.target);
 
@@ -32,8 +31,14 @@ void Grid::draw(const Camera &camera) const {
   m_program.set("u_viewProjection", viewProjection);
   m_program.set("u_inverseViewProjection", glm::inverse(viewProjection));
   m_program.set("u_cameraPosition", camera.position);
-  m_program.set("u_cellSize", kCellSize);
   m_program.set("u_fadeDistance", distance * kFadeRatio);
+  m_program.set("u_cellSize", style.cellSize);
+  m_program.set("u_minorColor", style.minorColor);
+  m_program.set("u_majorColor", style.majorColor);
+  m_program.set("u_xAxisColor", style.xAxisColor);
+  m_program.set("u_zAxisColor", style.zAxisColor);
+  m_program.set("u_minorAlpha", style.minorAlpha);
+  m_program.set("u_majorAlpha", style.majorAlpha);
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

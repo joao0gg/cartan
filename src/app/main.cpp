@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
   QSurfaceFormat::setDefaultFormat(format);
 
   QApplication app(argc, argv);
+  app.setApplicationName("Cartan");
 
   cartan::app::MainWindow window;
   window.show();

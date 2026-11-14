@@ -2,6 +2,7 @@
 
 #include "render/camera/camera.h"
 #include "render/gl/program.h"
+#include "render/theme.h"
 
 namespace cartan::render {
 
@@ -13,7 +14,7 @@ public:
   Grid(const Grid &) = delete;
   Grid &operator=(const Grid &) = delete;
 
-  void draw(const Camera &camera) const;
+  void draw(const Camera &camera, const GridStyle &style) const;
 
 private:
   gl::Program m_program;

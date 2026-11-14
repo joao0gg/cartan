@@ -1,0 +1,14 @@
+{
+  "format": 1,
+  "name": "Dark",
+  "background": "#202020",
+  "grid": {
+    "minorColor": "#ffffff",
+    "majorColor": "#ffffff",
+    "xAxisColor": "#ff0000",
+    "zAxisColor": "#0000ff",
+    "minorAlpha": 0.1,
+    "majorAlpha": 0.25,
+    "cellSize": 1.0
+  }
+}

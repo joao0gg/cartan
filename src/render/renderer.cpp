@@ -56,6 +56,10 @@ const GLInfo &Renderer::info() const {
   return m_info;
 }
 
+void Renderer::setTheme(const Theme &theme) {
+  m_theme = theme;
+}
+
 void Renderer::resize(int width, int height) {
   m_width = width;
   m_height = height;
@@ -65,11 +69,12 @@ void Renderer::render(unsigned int framebuffer, const Camera &camera) {
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
   glViewport(0, 0, m_width, m_height);
 
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  const glm::vec3 &background = m_theme.background;
+  glClearColor(background.r, background.g, background.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (m_grid) {
-    m_grid->draw(camera);
+    m_grid->draw(camera, m_theme.grid);
   }
 }
 

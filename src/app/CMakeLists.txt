@@ -1,7 +1,16 @@
 add_executable(cartan
     main.cpp
     MainWindow.cpp
+    themes.cpp
     viewport.cpp
+)
+
+qt_add_resources(cartan "themes"
+    PREFIX "/themes"
+    BASE themes
+    FILES
+        themes/light.json
+        themes/dark.json
 )
 
 target_link_libraries(cartan PRIVATE
