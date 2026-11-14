@@ -2,6 +2,7 @@
 #include <QSurfaceFormat>
 
 #include "app/MainWindow.h"
+#include "app/context.h"
 
 int main(int argc, char **argv) {
   QSurfaceFormat format;
@@ -11,10 +12,16 @@ int main(int argc, char **argv) {
   format.setSamples(4);
   QSurfaceFormat::setDefaultFormat(format);
 
+  QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
   QApplication app(argc, argv);
   app.setApplicationName("Cartan");
 
-  cartan::app::MainWindow window;
+  cartan::app::Context context;
+  context.log().install();
+  context.restoreTheme();
+
+  cartan::app::MainWindow window(context);
   window.show();
 
   return app.exec();

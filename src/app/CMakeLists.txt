@@ -1,6 +1,11 @@
 add_executable(cartan
     main.cpp
     MainWindow.cpp
+    context.cpp
+    editors.cpp
+    log.cpp
+    messages.cpp
+    outline.cpp
     themes.cpp
     viewport.cpp
 )

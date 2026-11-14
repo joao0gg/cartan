@@ -7,6 +7,8 @@
 #include <QOpenGLContext>
 #include <QWheelEvent>
 
+#include "app/context.h"
+
 namespace cartan::app {
 
 namespace {
@@ -17,19 +19,22 @@ render::GLProc loadProc(const char *name) {
 
 } // namespace
 
-Viewport::Viewport(QWidget *parent) : QOpenGLWidget(parent), m_controller(m_camera) {
+Viewport::Viewport(Context &context, QWidget *parent)
+    : QOpenGLWidget(parent), m_context(context), m_controller(m_camera) {
   setFocusPolicy(Qt::StrongFocus);
+
+  m_renderer.setTheme(context.theme());
+
+  connect(&context, &Context::themeChanged, this, [this]() {
+    m_renderer.setTheme(m_context.theme());
+    update();
+  });
 }
 
 Viewport::~Viewport() {
   makeCurrent();
   m_renderer.release();
   doneCurrent();
-}
-
-void Viewport::setTheme(const render::Theme &theme) {
-  m_renderer.setTheme(theme);
-  update();
 }
 
 void Viewport::initializeGL() {

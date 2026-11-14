@@ -7,18 +7,18 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMenuBar>
-#include <QPlainTextEdit>
-#include <QPointer>
-#include <QSettings>
-#include <QStandardPaths>
-#include <QTreeWidget>
+#include <QTabWidget>
+#include <QToolButton>
 #include <QUrl>
 
 #include <exception>
 #include <filesystem>
 
+#include "app/context.h"
+#include "app/editors.h"
+#include "app/messages.h"
+#include "app/outline.h"
 #include "app/themes.h"
-#include "app/viewport.h"
 #include "io/obj.h"
 
 namespace cartan::app {
@@ -28,50 +28,40 @@ namespace {
 constexpr int kDefaultWindowWidth = 1280;
 constexpr int kDefaultWindowHeight = 800;
 
-QPointer<QPlainTextEdit> messages;
-QtMessageHandler previousHandler = nullptr;
-
-void handleMessage(QtMsgType type, const QMessageLogContext &context, const QString &message) {
-  if (messages) {
-    QMetaObject::invokeMethod(messages, [message]() {
-      messages->appendPlainText(message);
-    });
-  }
-
-  if (previousHandler != nullptr) {
-    previousHandler(type, context, message);
-  }
-}
-
-QSettings settings() {
-  const QString directory = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-
-  return QSettings(directory + "/settings.ini", QSettings::IniFormat);
-}
-
 } // namespace
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+MainWindow::MainWindow(Context &context, QWidget *parent)
+    : QMainWindow(parent), m_context(context) {
   setWindowTitle("Cartan");
   resize(kDefaultWindowWidth, kDefaultWindowHeight);
 
-  messages = new QPlainTextEdit;
-  messages->setReadOnly(true);
-  previousHandler = qInstallMessageHandler(handleMessage);
+  m_tabs = new QTabWidget;
+  m_tabs->setDocumentMode(true);
+  m_tabs->setTabsClosable(true);
+  m_tabs->setMovable(true);
+  setCentralWidget(m_tabs);
 
-  m_viewport = new Viewport;
-  setCentralWidget(m_viewport);
+  connect(m_tabs, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
 
-  auto *outline = new QTreeWidget;
-  outline->setHeaderHidden(true);
+  auto *newTabMenu = new QMenu(this);
+  fillNewMenu(newTabMenu, false);
 
-  auto *outlineDock = new QDockWidget("Outline", this);
-  outlineDock->setWidget(outline);
-  addDockWidget(Qt::LeftDockWidgetArea, outlineDock);
+  auto *newTabButton = new QToolButton;
+  newTabButton->setText("+");
+  newTabButton->setAutoRaise(true);
+  newTabButton->setToolTip("New tab");
+  newTabButton->setMenu(newTabMenu);
+  newTabButton->setPopupMode(QToolButton::MenuButtonPopup);
+  m_tabs->setCornerWidget(newTabButton, Qt::TopRightCorner);
 
-  auto *messagesDock = new QDockWidget("Messages", this);
-  messagesDock->setWidget(messages);
-  addDockWidget(Qt::BottomDockWidgetArea, messagesDock);
+  connect(newTabButton, &QToolButton::clicked, this, [this]() {
+    newTab(editorTypes().first());
+  });
+
+  addEditor("Outline", new Outline(context), Qt::LeftDockWidgetArea);
+  addEditor("Messages", new Messages(context), Qt::BottomDockWidgetArea);
+
+  newTab(editorTypes().first());
 
   QMenu *fileMenu = menuBar()->addMenu("&File");
   QAction *openAction = fileMenu->addAction("&Open...", this, &MainWindow::openMesh);
@@ -79,13 +69,59 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   fileMenu->addSeparator();
   fileMenu->addAction("E&xit", this, &QWidget::close);
 
-  QMenu *themeMenu = menuBar()->addMenu("&View")->addMenu("&Theme");
+  QMenu *viewMenu = menuBar()->addMenu("&View");
+  fillNewMenu(viewMenu->addMenu("&New"), true);
+  QAction *closeTabAction = viewMenu->addAction("&Close Tab", this, [this]() {
+    closeTab(m_tabs->currentIndex());
+  });
+  closeTabAction->setShortcut(QKeySequence::Close);
+  viewMenu->addSeparator();
+
+  QMenu *themeMenu = viewMenu->addMenu("&Theme");
   connect(themeMenu, &QMenu::aboutToShow, this, [this, themeMenu]() {
     fillThemeMenu(themeMenu);
   });
+}
 
-  if (!applyTheme(settings().value("theme").toString())) {
-    applyTheme(defaultThemePath());
+void MainWindow::addEditor(const QString &title, QWidget *editor, Qt::DockWidgetArea area) {
+  auto *dock = new QDockWidget(title, this);
+  dock->setObjectName(title);
+  dock->setWidget(editor);
+  addDockWidget(area, dock);
+}
+
+void MainWindow::addTab(const QString &title, QWidget *editor) {
+  m_tabs->setCurrentIndex(m_tabs->addTab(editor, title));
+  editor->setFocus();
+}
+
+void MainWindow::closeTab(int index) {
+  QWidget *editor = m_tabs->widget(index);
+
+  if (editor == nullptr) {
+    return;
+  }
+
+  m_tabs->removeTab(index);
+  editor->deleteLater();
+}
+
+void MainWindow::newTab(const EditorType &type) {
+  const int count = ++m_tabCounts[type.name];
+  const QString title = count == 1 ? type.name : QString("%1 %2").arg(type.name).arg(count);
+
+  addTab(title, type.create(m_context));
+}
+
+void MainWindow::fillNewMenu(QMenu *menu, bool shortcuts) {
+  for (const EditorType &type : editorTypes()) {
+    QAction *action = menu->addAction(type.name, this, [this, &type]() {
+      newTab(type);
+    });
+
+    if (shortcuts && &type == &editorTypes().first()) {
+      action->setShortcut(QKeySequence::AddTab);
+    }
   }
 }
 
@@ -128,11 +164,11 @@ void MainWindow::fillThemeMenu(QMenu *menu) {
 
     QAction *action = menu->addAction(label);
     action->setCheckable(true);
-    action->setChecked(theme.path == m_themePath);
+    action->setChecked(theme.path == m_context.themePath());
     group->addAction(action);
 
     connect(action, &QAction::triggered, this, [this, path = theme.path]() {
-      applyTheme(path);
+      m_context.setTheme(path);
     });
   }
 
@@ -142,24 +178,6 @@ void MainWindow::fillThemeMenu(QMenu *menu) {
     QDir().mkpath(directory);
     QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
   });
-}
-
-bool MainWindow::applyTheme(const QString &path) {
-  if (path.isEmpty()) {
-    return false;
-  }
-
-  const std::optional<render::Theme> theme = loadTheme(path);
-
-  if (!theme) {
-    return false;
-  }
-
-  m_viewport->setTheme(*theme);
-  m_themePath = path;
-  settings().setValue("theme", path);
-
-  return true;
 }
 
 } // namespace cartan::app

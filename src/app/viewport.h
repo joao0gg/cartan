@@ -6,16 +6,15 @@
 #include "render/camera/camera.h"
 #include "render/camera/orbitcontroller.h"
 #include "render/renderer.h"
-#include "render/theme.h"
 
 namespace cartan::app {
 
+class Context;
+
 class Viewport : public QOpenGLWidget {
 public:
-  explicit Viewport(QWidget *parent = nullptr);
+  explicit Viewport(Context &context, QWidget *parent = nullptr);
   ~Viewport() override;
-
-  void setTheme(const render::Theme &theme);
 
 protected:
   void initializeGL() override;
@@ -31,6 +30,7 @@ protected:
 private:
   void fit();
 
+  Context &m_context;
   render::Renderer m_renderer;
   render::Camera m_camera;
   render::OrbitController m_controller;
