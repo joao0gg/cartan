@@ -4,6 +4,8 @@
 #include <QDesktopServices>
 #include <QDir>
 #include <QDockWidget>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QMenuBar>
 #include <QPlainTextEdit>
 #include <QPointer>
@@ -12,8 +14,12 @@
 #include <QTreeWidget>
 #include <QUrl>
 
+#include <exception>
+#include <filesystem>
+
 #include "app/themes.h"
 #include "app/viewport.h"
+#include "io/obj.h"
 
 namespace cartan::app {
 
@@ -67,7 +73,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   messagesDock->setWidget(messages);
   addDockWidget(Qt::BottomDockWidgetArea, messagesDock);
 
-  menuBar()->addMenu("&File")->addAction("E&xit", this, &QWidget::close);
+  QMenu *fileMenu = menuBar()->addMenu("&File");
+  QAction *openAction = fileMenu->addAction("&Open...", this, &MainWindow::openMesh);
+  openAction->setShortcut(QKeySequence::Open);
+  fileMenu->addSeparator();
+  fileMenu->addAction("E&xit", this, &QWidget::close);
 
   QMenu *themeMenu = menuBar()->addMenu("&View")->addMenu("&Theme");
   connect(themeMenu, &QMenu::aboutToShow, this, [this, themeMenu]() {
@@ -76,6 +86,28 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
   if (!applyTheme(settings().value("theme").toString())) {
     applyTheme(defaultThemePath());
+  }
+}
+
+void MainWindow::openMesh() {
+  const QString path =
+      QFileDialog::getOpenFileName(this, "Open Mesh", QString(), "Meshes (*.obj);;All Files (*)");
+
+  if (path.isEmpty()) {
+    return;
+  }
+
+  const QString name = QFileInfo(path).fileName();
+
+  try {
+    const io::MeshData mesh = io::readObj(std::filesystem::path(path.toStdU16String()));
+
+    qInfo().noquote() << QString("Loaded %1: %2 vertices, %3 triangles")
+                             .arg(name)
+                             .arg(mesh.positions.size())
+                             .arg(mesh.triangles.size());
+  } catch (const std::exception &error) {
+    qWarning().noquote() << QString("Failed to load %1: %2").arg(name, error.what());
   }
 }
 

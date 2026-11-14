@@ -15,6 +15,7 @@ qt_add_resources(cartan "themes"
 
 target_link_libraries(cartan PRIVATE
     cartan_engine
+    cartan_io
     cartan_render
     Qt6::Widgets
     Qt6::OpenGLWidgets

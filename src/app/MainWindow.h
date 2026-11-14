@@ -13,6 +13,7 @@ public:
   explicit MainWindow(QWidget *parent = nullptr);
 
 private:
+  void openMesh();
   void fillThemeMenu(QMenu *menu);
   bool applyTheme(const QString &path);
 

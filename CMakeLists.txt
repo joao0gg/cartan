@@ -10,6 +10,7 @@ option(CARTAN_BUILD_GUI "Build Qt application" ON)
 add_subdirectory(extern/glad)
 
 add_subdirectory(src/engine)
+add_subdirectory(src/io)
 add_subdirectory(src/render)
 add_subdirectory(src/cli)
 
