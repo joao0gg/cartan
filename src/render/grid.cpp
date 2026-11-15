@@ -23,7 +23,7 @@ Grid::~Grid() {
   glDeleteVertexArrays(1, &m_vertexArray);
 }
 
-void Grid::draw(const Camera &camera, const GridStyle &style) const {
+void Grid::draw(const Camera &camera, const GridStyle &style, float height, float cellSize) const {
   const glm::mat4 viewProjection = camera.projection() * camera.view();
   const float distance = glm::length(camera.position - camera.target);
 
@@ -32,7 +32,8 @@ void Grid::draw(const Camera &camera, const GridStyle &style) const {
   m_program.set("u_inverseViewProjection", glm::inverse(viewProjection));
   m_program.set("u_cameraPosition", camera.position);
   m_program.set("u_fadeDistance", distance * kFadeRatio);
-  m_program.set("u_cellSize", style.cellSize);
+  m_program.set("u_cellSize", cellSize);
+  m_program.set("u_height", height);
   m_program.set("u_minorColor", style.minorColor);
   m_program.set("u_majorColor", style.majorColor);
   m_program.set("u_xAxisColor", style.xAxisColor);

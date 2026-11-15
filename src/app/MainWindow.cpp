@@ -13,6 +13,7 @@
 
 #include <exception>
 #include <filesystem>
+#include <utility>
 
 #include "app/context.h"
 #include "app/editors.h"
@@ -136,12 +137,17 @@ void MainWindow::openMesh() {
   const QString name = QFileInfo(path).fileName();
 
   try {
-    const io::MeshData mesh = io::readObj(std::filesystem::path(path.toStdU16String()));
+    io::MeshData mesh = io::readObj(std::filesystem::path(path.toStdU16String()));
 
     qInfo().noquote() << QString("Loaded %1: %2 vertices, %3 triangles")
                              .arg(name)
                              .arg(mesh.positions.size())
                              .arg(mesh.triangles.size());
+
+    m_context.scene().addSurfaceMesh(QFileInfo(path).completeBaseName().toStdString(),
+                                     std::move(mesh.positions), std::move(mesh.triangles));
+    m_context.notifySceneChanged();
+    m_context.requestFit();
   } catch (const std::exception &error) {
     qWarning().noquote() << QString("Failed to load %1: %2").arg(name, error.what());
   }

@@ -1,10 +1,16 @@
 #include "render/renderer.h"
 
+#include <cmath>
 #include <stdexcept>
+#include <unordered_set>
 
 #include <glad/gl.h>
 
+#include "render/gl/program.h"
+#include "render/gpumesh.h"
 #include "render/grid.h"
+#include "shaders/surfacemesh.frag.h"
+#include "shaders/surfacemesh.vert.h"
 
 namespace cartan::render {
 
@@ -46,9 +52,12 @@ void Renderer::initialize(GLLoader loader) {
   glEnable(GL_DEPTH_TEST);
 
   m_grid = std::make_unique<Grid>();
+  m_meshProgram = std::make_unique<gl::Program>(surfacemesh_vert, surfacemesh_frag);
 }
 
 void Renderer::release() {
+  m_meshes.clear();
+  m_meshProgram.reset();
   m_grid.reset();
 }
 
@@ -65,7 +74,7 @@ void Renderer::resize(int width, int height) {
   m_height = height;
 }
 
-void Renderer::render(unsigned int framebuffer, const Camera &camera) {
+void Renderer::render(unsigned int framebuffer, const Camera &camera, const Scene &scene) {
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
   glViewport(0, 0, m_width, m_height);
 
@@ -73,9 +82,66 @@ void Renderer::render(unsigned int framebuffer, const Camera &camera) {
   glClearColor(background.r, background.g, background.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (m_grid) {
-    m_grid->draw(camera, m_theme.grid);
+  if (!m_grid || !m_meshProgram) {
+    return;
   }
+
+  sync(scene);
+  drawMeshes(camera, scene);
+  drawGrid(camera, scene);
+}
+
+void Renderer::sync(const Scene &scene) {
+  std::unordered_set<std::uint64_t> alive;
+
+  for (const auto &structure : scene.structures()) {
+    const auto *mesh = dynamic_cast<const SurfaceMesh *>(structure.get());
+
+    if (mesh == nullptr) {
+      continue;
+    }
+
+    alive.insert(mesh->id());
+
+    if (!m_meshes.contains(mesh->id())) {
+      m_meshes[mesh->id()] = std::make_unique<GpuMesh>(*mesh);
+    }
+  }
+
+  std::erase_if(m_meshes, [&alive](const auto &entry) {
+    return !alive.contains(entry.first);
+  });
+}
+
+void Renderer::drawMeshes(const Camera &camera, const Scene &scene) {
+  m_meshProgram->use();
+  m_meshProgram->set("u_view", camera.view());
+  m_meshProgram->set("u_projection", camera.projection());
+
+  for (const auto &structure : scene.structures()) {
+    const auto *mesh = dynamic_cast<const SurfaceMesh *>(structure.get());
+
+    if (mesh == nullptr || !mesh->visible) {
+      continue;
+    }
+
+    m_meshes.at(mesh->id())->draw(*m_meshProgram, mesh->options);
+  }
+}
+
+void Renderer::drawGrid(const Camera &camera, const Scene &scene) {
+  const Bounds bounds = scene.bounds();
+  const float size = bounds.empty() ? 0.0f : glm::length(bounds.max - bounds.min);
+
+  float height = 0.0f;
+  float cellSize = m_theme.grid.cellSize;
+
+  if (size > 0.0f) {
+    height = bounds.min.y;
+    cellSize *= std::pow(10.0f, std::floor(std::log10(size)) - 1.0f);
+  }
+
+  m_grid->draw(camera, m_theme.grid, height, cellSize);
 }
 
 } // namespace cartan::render

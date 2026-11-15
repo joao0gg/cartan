@@ -72,6 +72,10 @@ void Program::use() const {
   glUseProgram(m_id);
 }
 
+void Program::set(const char *name, int value) const {
+  glUniform1i(glGetUniformLocation(m_id, name), value);
+}
+
 void Program::set(const char *name, float value) const {
   glUniform1f(glGetUniformLocation(m_id, name), value);
 }

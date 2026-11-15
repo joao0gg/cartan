@@ -3,6 +3,7 @@
 uniform mat4 u_viewProjection;
 uniform vec3 u_cameraPosition;
 uniform float u_cellSize;
+uniform float u_height;
 uniform float u_fadeDistance;
 uniform vec3 u_minorColor;
 uniform vec3 u_majorColor;
@@ -26,13 +27,13 @@ float lines(vec2 coord) {
 }
 
 void main() {
-  float height = v_far.y - v_near.y;
+  float dy = v_far.y - v_near.y;
 
-  if (abs(height) < 1e-6) {
+  if (abs(dy) < 1e-6) {
     discard;
   }
 
-  float t = -v_near.y / height;
+  float t = (u_height - v_near.y) / dy;
 
   if (t <= 0.0 || t >= 1.0) {
     discard;

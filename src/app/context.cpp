@@ -26,6 +26,18 @@ Log &Context::log() {
   return m_log;
 }
 
+render::Scene &Context::scene() {
+  return m_scene;
+}
+
+void Context::notifySceneChanged() {
+  emit sceneChanged();
+}
+
+void Context::requestFit() {
+  emit fitRequested();
+}
+
 const render::Theme &Context::theme() const {
   return m_theme;
 }

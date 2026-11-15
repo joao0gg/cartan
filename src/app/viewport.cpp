@@ -29,6 +29,11 @@ Viewport::Viewport(Context &context, QWidget *parent)
     m_renderer.setTheme(m_context.theme());
     update();
   });
+
+  connect(&context, &Context::sceneChanged, this, qOverload<>(&QWidget::update));
+  connect(&context, &Context::fitRequested, this, &Viewport::fit);
+
+  fit();
 }
 
 Viewport::~Viewport() {
@@ -64,7 +69,7 @@ void Viewport::paintGL() {
     return;
   }
 
-  m_renderer.render(defaultFramebufferObject(), m_camera);
+  m_renderer.render(defaultFramebufferObject(), m_camera, m_context.scene());
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event) {
@@ -108,7 +113,14 @@ void Viewport::keyPressEvent(QKeyEvent *event) {
 }
 
 void Viewport::fit() {
-  m_controller.fit(glm::vec3(0.0f), 1.0f);
+  const render::Bounds bounds = m_context.scene().bounds();
+
+  if (bounds.empty() || bounds.radius() <= 0.0f) {
+    m_controller.fit(glm::vec3(0.0f), 1.0f);
+  } else {
+    m_controller.fit(bounds.center(), bounds.radius());
+  }
+
   update();
 }
 

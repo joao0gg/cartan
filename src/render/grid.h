@@ -14,7 +14,7 @@ public:
   Grid(const Grid &) = delete;
   Grid &operator=(const Grid &) = delete;
 
-  void draw(const Camera &camera, const GridStyle &style) const;
+  void draw(const Camera &camera, const GridStyle &style, float height, float cellSize) const;
 
 private:
   gl::Program m_program;

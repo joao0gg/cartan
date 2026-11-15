@@ -3,6 +3,8 @@ find_package(glm REQUIRED)
 set(SHADERS
     grid.vert
     grid.frag
+    surfacemesh.vert
+    surfacemesh.frag
 )
 
 foreach(shader ${SHADERS})
@@ -21,7 +23,13 @@ endforeach()
 add_library(cartan_render STATIC
     renderer.cpp
     grid.cpp
+    gpumesh.cpp
+    gl/buffer.cpp
     gl/program.cpp
+    gl/vertexarray.cpp
+    scene/scene.cpp
+    scene/structure.cpp
+    scene/surfacemesh.cpp
     camera/camera.cpp
     camera/orbitcontroller.cpp
     ${SHADER_HEADERS}
