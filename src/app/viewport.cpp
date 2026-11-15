@@ -5,8 +5,10 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QOpenGLContext>
+#include <QPainter>
 #include <QWheelEvent>
 
+#include "app/colorbar.h"
 #include "app/context.h"
 
 namespace cartan::app {
@@ -70,6 +72,11 @@ void Viewport::paintGL() {
   }
 
   m_renderer.render(defaultFramebufferObject(), m_camera, m_context.scene());
+
+  if (m_context.showColorBar()) {
+    QPainter painter(this);
+    drawColorBars(painter, rect(), m_context.scene(), m_context.theme(), m_context.colorBarStyle());
+  }
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event) {

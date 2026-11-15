@@ -1,5 +1,6 @@
 #include "render/scene/surfacemesh.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 
@@ -40,6 +41,80 @@ const std::vector<glm::vec3> &SurfaceMesh::normals() const {
 
 Bounds SurfaceMesh::bounds() const {
   return m_bounds;
+}
+
+ScalarQuantity &SurfaceMesh::addVertexScalar(const std::string &name, std::vector<float> values) {
+  if (values.size() != m_positions.size()) {
+    throw std::invalid_argument("vertex scalar \"" + name + "\" needs one value per vertex");
+  }
+
+  return addScalar(name, ScalarLocation::Vertex, std::move(values));
+}
+
+ScalarQuantity &SurfaceMesh::addFaceScalar(const std::string &name, std::vector<float> values) {
+  if (values.size() != m_triangles.size()) {
+    throw std::invalid_argument("face scalar \"" + name + "\" needs one value per triangle");
+  }
+
+  return addScalar(name, ScalarLocation::Face, std::move(values));
+}
+
+ScalarQuantity &SurfaceMesh::addScalar(const std::string &name, ScalarLocation location,
+                                       std::vector<float> values) {
+  const bool wasActive = m_active != nullptr && m_active->name() == name;
+
+  removeQuantity(name);
+
+  auto quantity = std::make_unique<ScalarQuantity>(name, location, std::move(values));
+  ScalarQuantity &result = *quantity;
+  m_quantities.push_back(std::move(quantity));
+
+  if (wasActive) {
+    m_active = &result;
+  }
+
+  ++m_version;
+
+  return result;
+}
+
+void SurfaceMesh::removeQuantity(const std::string &name) {
+  if (m_active != nullptr && m_active->name() == name) {
+    m_active = nullptr;
+  }
+
+  std::erase_if(m_quantities, [&name](const std::unique_ptr<ScalarQuantity> &quantity) {
+    return quantity->name() == name;
+  });
+
+  ++m_version;
+}
+
+const std::vector<std::unique_ptr<ScalarQuantity>> &SurfaceMesh::quantities() const {
+  return m_quantities;
+}
+
+ScalarQuantity *SurfaceMesh::findQuantity(const std::string &name) const {
+  for (const auto &quantity : m_quantities) {
+    if (quantity->name() == name) {
+      return quantity.get();
+    }
+  }
+
+  return nullptr;
+}
+
+void SurfaceMesh::setActiveQuantity(const std::string &name) {
+  m_active = name.empty() ? nullptr : findQuantity(name);
+  ++m_version;
+}
+
+ScalarQuantity *SurfaceMesh::activeQuantity() const {
+  return m_active;
+}
+
+std::uint64_t SurfaceMesh::version() const {
+  return m_version;
 }
 
 void SurfaceMesh::computeNormals() {

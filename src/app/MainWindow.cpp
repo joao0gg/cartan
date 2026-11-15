@@ -5,22 +5,17 @@
 #include <QDir>
 #include <QDockWidget>
 #include <QFileDialog>
-#include <QFileInfo>
 #include <QMenuBar>
 #include <QTabWidget>
 #include <QToolButton>
 #include <QUrl>
 
-#include <exception>
-#include <filesystem>
-#include <utility>
-
+#include "app/colorbardialog.h"
 #include "app/context.h"
 #include "app/editors.h"
 #include "app/messages.h"
 #include "app/outline.h"
 #include "app/themes.h"
-#include "io/obj.h"
 
 namespace cartan::app {
 
@@ -76,6 +71,19 @@ MainWindow::MainWindow(Context &context, QWidget *parent)
     closeTab(m_tabs->currentIndex());
   });
   closeTabAction->setShortcut(QKeySequence::Close);
+  viewMenu->addSeparator();
+
+  QMenu *colorBarMenu = viewMenu->addMenu("Color &Bar");
+
+  QAction *colorBarAction = colorBarMenu->addAction("&Show");
+  colorBarAction->setCheckable(true);
+  colorBarAction->setChecked(context.showColorBar());
+  connect(colorBarAction, &QAction::toggled, &context, &Context::setShowColorBar);
+
+  colorBarMenu->addAction("S&ettings...", this, [this]() {
+    ColorBarDialog dialog(m_context, this);
+    dialog.exec();
+  });
   viewMenu->addSeparator();
 
   QMenu *themeMenu = viewMenu->addMenu("&Theme");
@@ -134,22 +142,8 @@ void MainWindow::openMesh() {
     return;
   }
 
-  const QString name = QFileInfo(path).fileName();
-
-  try {
-    io::MeshData mesh = io::readObj(std::filesystem::path(path.toStdU16String()));
-
-    qInfo().noquote() << QString("Loaded %1: %2 vertices, %3 triangles")
-                             .arg(name)
-                             .arg(mesh.positions.size())
-                             .arg(mesh.triangles.size());
-
-    m_context.scene().addSurfaceMesh(QFileInfo(path).completeBaseName().toStdString(),
-                                     std::move(mesh.positions), std::move(mesh.triangles));
-    m_context.notifySceneChanged();
+  if (m_context.openMesh(path) != nullptr) {
     m_context.requestFit();
-  } catch (const std::exception &error) {
-    qWarning().noquote() << QString("Failed to load %1: %2").arg(name, error.what());
   }
 }
 

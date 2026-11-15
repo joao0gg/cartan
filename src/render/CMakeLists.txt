@@ -22,11 +22,14 @@ endforeach()
 
 add_library(cartan_render STATIC
     renderer.cpp
+    colormap.cpp
     grid.cpp
     gpumesh.cpp
     gl/buffer.cpp
     gl/program.cpp
+    gl/texture.cpp
     gl/vertexarray.cpp
+    scene/scalarquantity.cpp
     scene/scene.cpp
     scene/structure.cpp
     scene/surfacemesh.cpp

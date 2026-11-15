@@ -34,6 +34,35 @@ GpuMesh::GpuMesh(const SurfaceMesh &mesh) {
   m_vertexArray.setFloatAttribute(1, m_buffer, 3, sizeof(Corner), offsetof(Corner, normal));
 
   m_count = static_cast<int>(corners.size());
+
+  m_vertexArray.setFloatAttribute(2, m_values, 1, sizeof(float), 0);
+}
+
+void GpuMesh::update(const SurfaceMesh &mesh) {
+  if (m_hasValues && m_version == mesh.version()) {
+    return;
+  }
+
+  std::vector<float> values(m_count, 0.0f);
+  const ScalarQuantity *quantity = mesh.activeQuantity();
+
+  if (quantity != nullptr) {
+    const std::vector<float> &source = quantity->values();
+    const auto &triangles = mesh.triangles();
+
+    for (std::size_t face = 0; face < triangles.size(); ++face) {
+      for (std::size_t corner = 0; corner < 3; ++corner) {
+        values[face * 3 + corner] = quantity->location() == ScalarLocation::Vertex
+                                        ? source[triangles[face][corner]]
+                                        : source[face];
+      }
+    }
+  }
+
+  m_values.upload(values.data(), values.size() * sizeof(float));
+
+  m_version = mesh.version();
+  m_hasValues = true;
 }
 
 void GpuMesh::draw(const gl::Program &program, const SurfaceMeshOptions &options) const {

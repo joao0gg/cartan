@@ -7,6 +7,7 @@
 #include <glad/gl.h>
 
 #include "render/gl/program.h"
+#include "render/gl/texture.h"
 #include "render/gpumesh.h"
 #include "render/grid.h"
 #include "shaders/surfacemesh.frag.h"
@@ -18,6 +19,7 @@ namespace {
 
 constexpr int kRequiredMajor = 4;
 constexpr int kRequiredMinor = 1;
+constexpr int kColormapSize = 256;
 
 std::string glString(GLenum name) {
   const auto *value = reinterpret_cast<const char *>(glGetString(name));
@@ -53,10 +55,21 @@ void Renderer::initialize(GLLoader loader) {
 
   m_grid = std::make_unique<Grid>();
   m_meshProgram = std::make_unique<gl::Program>(surfacemesh_vert, surfacemesh_frag);
+
+  for (const Colormap colormap : kColormaps) {
+    std::vector<glm::vec3> colors(kColormapSize);
+
+    for (int i = 0; i < kColormapSize; ++i) {
+      colors[i] = sampleColormap(colormap, float(i) / float(kColormapSize - 1));
+    }
+
+    m_colormaps[colormap] = std::make_unique<gl::Texture1D>(colors);
+  }
 }
 
 void Renderer::release() {
   m_meshes.clear();
+  m_colormaps.clear();
   m_meshProgram.reset();
   m_grid.reset();
 }
@@ -77,6 +90,13 @@ void Renderer::resize(int width, int height) {
 void Renderer::render(unsigned int framebuffer, const Camera &camera, const Scene &scene) {
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
   glViewport(0, 0, m_width, m_height);
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthMask(GL_TRUE);
+  glDisable(GL_BLEND);
+  glDisable(GL_CULL_FACE);
+  glDisable(GL_SCISSOR_TEST);
+  glDisable(GL_STENCIL_TEST);
 
   const glm::vec3 &background = m_theme.background;
   glClearColor(background.r, background.g, background.b, 1.0f);
@@ -106,6 +126,8 @@ void Renderer::sync(const Scene &scene) {
     if (!m_meshes.contains(mesh->id())) {
       m_meshes[mesh->id()] = std::make_unique<GpuMesh>(*mesh);
     }
+
+    m_meshes.at(mesh->id())->update(*mesh);
   }
 
   std::erase_if(m_meshes, [&alive](const auto &entry) {
@@ -123,6 +145,19 @@ void Renderer::drawMeshes(const Camera &camera, const Scene &scene) {
 
     if (mesh == nullptr || !mesh->visible) {
       continue;
+    }
+
+    const ScalarQuantity *quantity = mesh->activeQuantity();
+    m_meshProgram->set("u_useScalar", quantity != nullptr ? 1 : 0);
+
+    if (quantity != nullptr) {
+      const auto [min, max] = quantity->range();
+
+      m_colormaps.at(quantity->options.colormap)->bind(0);
+      m_meshProgram->set("u_colormap", 0);
+      m_meshProgram->set("u_min", min);
+      m_meshProgram->set("u_max", max);
+      m_meshProgram->set("u_invalidColor", quantity->options.invalidColor);
     }
 
     m_meshes.at(mesh->id())->draw(*m_meshProgram, mesh->options);

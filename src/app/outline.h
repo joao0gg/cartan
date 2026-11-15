@@ -12,6 +12,7 @@ public:
 
 private:
   void refresh();
+  void activate(QTreeWidgetItem *item);
 
   Context &m_context;
 };

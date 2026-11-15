@@ -1,6 +1,8 @@
 add_executable(cartan
     main.cpp
     MainWindow.cpp
+    colorbar.cpp
+    colorbardialog.cpp
     context.cpp
     editors.cpp
     log.cpp

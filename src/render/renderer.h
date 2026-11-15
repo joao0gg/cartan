@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "render/camera/camera.h"
+#include "render/colormap.h"
 #include "render/scene/scene.h"
 #include "render/theme.h"
 
@@ -16,7 +17,8 @@ class GpuMesh;
 
 namespace gl {
 class Program;
-}
+class Texture1D;
+} // namespace gl
 
 using GLProc = void (*)();
 using GLLoader = GLProc (*)(const char *name);
@@ -57,6 +59,7 @@ private:
   std::unique_ptr<Grid> m_grid;
   std::unique_ptr<gl::Program> m_meshProgram;
   std::unordered_map<std::uint64_t, std::unique_ptr<GpuMesh>> m_meshes;
+  std::unordered_map<Colormap, std::unique_ptr<gl::Texture1D>> m_colormaps;
 };
 
 } // namespace cartan::render
