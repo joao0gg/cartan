@@ -23,13 +23,14 @@ void VertexArray::unbind() const {
 }
 
 void VertexArray::setFloatAttribute(unsigned int location, const Buffer &buffer, int components,
-                                    std::size_t stride, std::size_t offset) {
+                                    std::size_t stride, std::size_t offset, unsigned int divisor) {
   bind();
   buffer.bind();
 
   glEnableVertexAttribArray(location);
   glVertexAttribPointer(location, components, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(stride),
                         reinterpret_cast<const void *>(offset));
+  glVertexAttribDivisor(location, divisor);
 
   unbind();
 }

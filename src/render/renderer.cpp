@@ -6,10 +6,13 @@
 
 #include <glad/gl.h>
 
+#include "render/arrow.h"
 #include "render/gl/program.h"
 #include "render/gl/texture.h"
 #include "render/gpumesh.h"
 #include "render/grid.h"
+#include "shaders/arrow.frag.h"
+#include "shaders/arrow.vert.h"
 #include "shaders/surfacemesh.frag.h"
 #include "shaders/surfacemesh.vert.h"
 
@@ -20,6 +23,7 @@ namespace {
 constexpr int kRequiredMajor = 4;
 constexpr int kRequiredMinor = 1;
 constexpr int kColormapSize = 256;
+constexpr float kAutoLengthRatio = 0.05f;
 
 std::string glString(GLenum name) {
   const auto *value = reinterpret_cast<const char *>(glGetString(name));
@@ -55,6 +59,8 @@ void Renderer::initialize(GLLoader loader) {
 
   m_grid = std::make_unique<Grid>();
   m_meshProgram = std::make_unique<gl::Program>(surfacemesh_vert, surfacemesh_frag);
+  m_arrowProgram = std::make_unique<gl::Program>(arrow_vert, arrow_frag);
+  m_arrow = std::make_unique<ArrowModel>();
 
   for (const Colormap colormap : kColormaps) {
     std::vector<glm::vec3> colors(kColormapSize);
@@ -71,6 +77,8 @@ void Renderer::release() {
   m_meshes.clear();
   m_colormaps.clear();
   m_meshProgram.reset();
+  m_arrowProgram.reset();
+  m_arrow.reset();
   m_grid.reset();
 }
 
@@ -102,12 +110,13 @@ void Renderer::render(unsigned int framebuffer, const Camera &camera, const Scen
   glClearColor(background.r, background.g, background.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (!m_grid || !m_meshProgram) {
+  if (!m_grid || !m_meshProgram || !m_arrowProgram) {
     return;
   }
 
   sync(scene);
   drawMeshes(camera, scene);
+  drawVectors(camera, scene);
   drawGrid(camera, scene);
 }
 
@@ -127,7 +136,7 @@ void Renderer::sync(const Scene &scene) {
       m_meshes[mesh->id()] = std::make_unique<GpuMesh>(*mesh);
     }
 
-    m_meshes.at(mesh->id())->update(*mesh);
+    m_meshes.at(mesh->id())->update(*mesh, *m_arrow);
   }
 
   std::erase_if(m_meshes, [&alive](const auto &entry) {
@@ -161,6 +170,44 @@ void Renderer::drawMeshes(const Camera &camera, const Scene &scene) {
     }
 
     m_meshes.at(mesh->id())->draw(*m_meshProgram, mesh->options);
+  }
+}
+
+void Renderer::drawVectors(const Camera &camera, const Scene &scene) {
+  m_arrowProgram->use();
+  m_arrowProgram->set("u_view", camera.view());
+  m_arrowProgram->set("u_projection", camera.projection());
+
+  for (const auto &structure : scene.structures()) {
+    const auto *mesh = dynamic_cast<const SurfaceMesh *>(structure.get());
+
+    if (mesh == nullptr || !mesh->visible) {
+      continue;
+    }
+
+    const auto &quantities = mesh->vectorQuantities();
+    const float size = 2.0f * mesh->bounds().radius();
+
+    for (std::size_t i = 0; i < quantities.size(); ++i) {
+      const VectorQuantity &quantity = *quantities[i];
+      const VectorOptions &options = quantity.options;
+
+      if (!options.enabled || quantity.maxLength() <= 0.0f) {
+        continue;
+      }
+
+      float scale = options.lengthScale;
+
+      if (options.autoScale) {
+        scale *= kAutoLengthRatio * size / quantity.maxLength();
+      }
+
+      m_arrowProgram->set("u_scale", scale);
+      m_arrowProgram->set("u_radius", options.radius * quantity.maxLength() * scale);
+      m_arrowProgram->set("u_color", options.color);
+
+      m_meshes.at(mesh->id())->drawVectors(i, *m_arrow);
+    }
   }
 }
 

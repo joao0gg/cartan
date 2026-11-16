@@ -18,7 +18,7 @@ public:
   void unbind() const;
 
   void setFloatAttribute(unsigned int location, const Buffer &buffer, int components,
-                         std::size_t stride, std::size_t offset);
+                         std::size_t stride, std::size_t offset, unsigned int divisor = 0);
 
 private:
   unsigned int m_id = 0;

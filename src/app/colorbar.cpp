@@ -49,7 +49,8 @@ QLinearGradient gradient(const QRect &bar, render::Colormap colormap) {
 }
 
 int drawColorBar(QPainter &painter, const QRect &area, int top,
-                 const render::ScalarQuantity &quantity, const ColorBarStyle &style) {
+                 const render::ScalarQuantity &quantity) {
+  const render::ColorBarOptions &style = quantity.options.colorBar;
   const QFontMetrics metrics = painter.fontMetrics();
   const auto [min, max] = quantity.range();
   const QString title = QString::fromStdString(quantity.name());
@@ -87,7 +88,7 @@ int drawColorBar(QPainter &painter, const QRect &area, int top,
 } // namespace
 
 void drawColorBars(QPainter &painter, const QRect &area, const render::Scene &scene,
-                   const render::Theme &theme, const ColorBarStyle &style) {
+                   const render::Theme &theme) {
   painter.setRenderHint(QPainter::Antialiasing, false);
   painter.setPen(textColor(theme));
 
@@ -96,11 +97,12 @@ void drawColorBars(QPainter &painter, const QRect &area, const render::Scene &sc
   for (const auto &structure : scene.structures()) {
     const auto *mesh = dynamic_cast<const render::SurfaceMesh *>(structure.get());
 
-    if (mesh == nullptr || !mesh->visible || mesh->activeQuantity() == nullptr) {
+    if (mesh == nullptr || !mesh->visible || mesh->activeQuantity() == nullptr ||
+        !mesh->activeQuantity()->options.colorBar.visible) {
       continue;
     }
 
-    const int height = drawColorBar(painter, area, top, *mesh->activeQuantity(), style);
+    const int height = drawColorBar(painter, area, top, *mesh->activeQuantity());
 
     if (height < 0) {
       break;

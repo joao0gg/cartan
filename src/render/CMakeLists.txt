@@ -5,6 +5,8 @@ set(SHADERS
     grid.frag
     surfacemesh.vert
     surfacemesh.frag
+    arrow.vert
+    arrow.frag
 )
 
 foreach(shader ${SHADERS})
@@ -22,6 +24,7 @@ endforeach()
 
 add_library(cartan_render STATIC
     renderer.cpp
+    arrow.cpp
     colormap.cpp
     grid.cpp
     gpumesh.cpp
@@ -33,6 +36,7 @@ add_library(cartan_render STATIC
     scene/scene.cpp
     scene/structure.cpp
     scene/surfacemesh.cpp
+    scene/vectorquantity.cpp
     camera/camera.cpp
     camera/orbitcontroller.cpp
     ${SHADER_HEADERS}

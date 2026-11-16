@@ -10,7 +10,6 @@
 #include <QToolButton>
 #include <QUrl>
 
-#include "app/colorbardialog.h"
 #include "app/context.h"
 #include "app/editors.h"
 #include "app/messages.h"
@@ -71,19 +70,6 @@ MainWindow::MainWindow(Context &context, QWidget *parent)
     closeTab(m_tabs->currentIndex());
   });
   closeTabAction->setShortcut(QKeySequence::Close);
-  viewMenu->addSeparator();
-
-  QMenu *colorBarMenu = viewMenu->addMenu("Color &Bar");
-
-  QAction *colorBarAction = colorBarMenu->addAction("&Show");
-  colorBarAction->setCheckable(true);
-  colorBarAction->setChecked(context.showColorBar());
-  connect(colorBarAction, &QAction::toggled, &context, &Context::setShowColorBar);
-
-  colorBarMenu->addAction("S&ettings...", this, [this]() {
-    ColorBarDialog dialog(m_context, this);
-    dialog.exec();
-  });
   viewMenu->addSeparator();
 
   QMenu *themeMenu = viewMenu->addMenu("&Theme");

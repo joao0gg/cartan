@@ -4,6 +4,8 @@
 #include <QApplication>
 #include <QSurfaceFormat>
 
+#include <glm/geometric.hpp>
+
 #include "app/MainWindow.h"
 #include "app/context.h"
 
@@ -34,6 +36,26 @@ int main(int argc, char **argv) {
 
     mesh->addVertexScalar("height", std::move(height));
     mesh->setActiveQuantity("height");
+
+    std::vector<glm::vec3> swirl;
+    for (const glm::vec3 &p : mesh->positions()) {
+      swirl.emplace_back(-p.z, 0.0f, p.x);
+    }
+
+    mesh->addVertexVector("swirl", std::move(swirl));
+
+    std::vector<glm::vec3> normals;
+    for (const auto &[a, b, c] : mesh->triangles()) {
+      const glm::vec3 &pa = mesh->positions()[a];
+      const glm::vec3 &pb = mesh->positions()[b];
+      const glm::vec3 &pc = mesh->positions()[c];
+
+      normals.push_back(glm::normalize(glm::cross(pb - pa, pc - pa)));
+    }
+
+    auto &faceNormals = mesh->addFaceVector("face normals", std::move(normals));
+    faceNormals.options.color = {0.0f, 0.0f, 1.0f};
+    faceNormals.options.enabled = false;
   }
 
   cartan::app::MainWindow window(context);

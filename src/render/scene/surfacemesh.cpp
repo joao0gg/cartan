@@ -87,6 +87,10 @@ void SurfaceMesh::removeQuantity(const std::string &name) {
     return quantity->name() == name;
   });
 
+  std::erase_if(m_vectorQuantities, [&name](const std::unique_ptr<VectorQuantity> &quantity) {
+    return quantity->name() == name;
+  });
+
   ++m_version;
 }
 
@@ -96,6 +100,51 @@ const std::vector<std::unique_ptr<ScalarQuantity>> &SurfaceMesh::quantities() co
 
 ScalarQuantity *SurfaceMesh::findQuantity(const std::string &name) const {
   for (const auto &quantity : m_quantities) {
+    if (quantity->name() == name) {
+      return quantity.get();
+    }
+  }
+
+  return nullptr;
+}
+
+VectorQuantity &SurfaceMesh::addVertexVector(const std::string &name,
+                                             std::vector<glm::vec3> vectors) {
+  if (vectors.size() != m_positions.size()) {
+    throw std::invalid_argument("vertex vector \"" + name + "\" needs one vector per vertex");
+  }
+
+  return addVector(name, VectorLocation::Vertex, std::move(vectors));
+}
+
+VectorQuantity &SurfaceMesh::addFaceVector(const std::string &name,
+                                           std::vector<glm::vec3> vectors) {
+  if (vectors.size() != m_triangles.size()) {
+    throw std::invalid_argument("face vector \"" + name + "\" needs one vector per triangle");
+  }
+
+  return addVector(name, VectorLocation::Face, std::move(vectors));
+}
+
+VectorQuantity &SurfaceMesh::addVector(const std::string &name, VectorLocation location,
+                                       std::vector<glm::vec3> vectors) {
+  removeQuantity(name);
+
+  auto quantity = std::make_unique<VectorQuantity>(name, location, std::move(vectors));
+  VectorQuantity &result = *quantity;
+  m_vectorQuantities.push_back(std::move(quantity));
+
+  ++m_version;
+
+  return result;
+}
+
+const std::vector<std::unique_ptr<VectorQuantity>> &SurfaceMesh::vectorQuantities() const {
+  return m_vectorQuantities;
+}
+
+VectorQuantity *SurfaceMesh::findVectorQuantity(const std::string &name) const {
+  for (const auto &quantity : m_vectorQuantities) {
     if (quantity->name() == name) {
       return quantity.get();
     }

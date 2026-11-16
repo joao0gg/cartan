@@ -10,6 +10,7 @@
 
 #include "render/scene/scalarquantity.h"
 #include "render/scene/structure.h"
+#include "render/scene/vectorquantity.h"
 
 namespace cartan::render {
 
@@ -40,6 +41,12 @@ public:
   const std::vector<std::unique_ptr<ScalarQuantity>> &quantities() const;
   ScalarQuantity *findQuantity(const std::string &name) const;
 
+  VectorQuantity &addVertexVector(const std::string &name, std::vector<glm::vec3> vectors);
+  VectorQuantity &addFaceVector(const std::string &name, std::vector<glm::vec3> vectors);
+
+  const std::vector<std::unique_ptr<VectorQuantity>> &vectorQuantities() const;
+  VectorQuantity *findVectorQuantity(const std::string &name) const;
+
   void setActiveQuantity(const std::string &name);
   ScalarQuantity *activeQuantity() const;
 
@@ -51,6 +58,8 @@ private:
   void computeNormals();
   ScalarQuantity &addScalar(const std::string &name, ScalarLocation location,
                             std::vector<float> values);
+  VectorQuantity &addVector(const std::string &name, VectorLocation location,
+                            std::vector<glm::vec3> vectors);
 
   std::vector<glm::vec3> m_positions;
   std::vector<Triangle> m_triangles;
@@ -58,6 +67,7 @@ private:
   Bounds m_bounds;
 
   std::vector<std::unique_ptr<ScalarQuantity>> m_quantities;
+  std::vector<std::unique_ptr<VectorQuantity>> m_vectorQuantities;
   ScalarQuantity *m_active = nullptr;
   std::uint64_t m_version = 0;
 };

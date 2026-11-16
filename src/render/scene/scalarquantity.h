@@ -15,12 +15,19 @@ enum class ScalarLocation {
   Face,
 };
 
+struct ColorBarOptions {
+  bool visible = true;
+  int width = 18;
+  int height = 200;
+};
+
 struct ScalarOptions {
   Colormap colormap = Colormap::Rainbow;
   bool autoRange = true;
   float min = 0.0f;
   float max = 1.0f;
   glm::vec3 invalidColor{0.5f};
+  ColorBarOptions colorBar;
 };
 
 class ScalarQuantity {

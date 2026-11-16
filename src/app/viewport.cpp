@@ -33,6 +33,7 @@ Viewport::Viewport(Context &context, QWidget *parent)
   });
 
   connect(&context, &Context::sceneChanged, this, qOverload<>(&QWidget::update));
+  connect(&context, &Context::displayChanged, this, qOverload<>(&QWidget::update));
   connect(&context, &Context::fitRequested, this, &Viewport::fit);
 
   fit();
@@ -73,10 +74,8 @@ void Viewport::paintGL() {
 
   m_renderer.render(defaultFramebufferObject(), m_camera, m_context.scene());
 
-  if (m_context.showColorBar()) {
-    QPainter painter(this);
-    drawColorBars(painter, rect(), m_context.scene(), m_context.theme(), m_context.colorBarStyle());
-  }
+  QPainter painter(this);
+  drawColorBars(painter, rect(), m_context.scene(), m_context.theme());
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event) {

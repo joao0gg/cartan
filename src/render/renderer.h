@@ -12,6 +12,7 @@
 
 namespace cartan::render {
 
+class ArrowModel;
 class Grid;
 class GpuMesh;
 
@@ -54,10 +55,13 @@ private:
 
   void sync(const Scene &scene);
   void drawMeshes(const Camera &camera, const Scene &scene);
+  void drawVectors(const Camera &camera, const Scene &scene);
   void drawGrid(const Camera &camera, const Scene &scene);
 
   std::unique_ptr<Grid> m_grid;
   std::unique_ptr<gl::Program> m_meshProgram;
+  std::unique_ptr<gl::Program> m_arrowProgram;
+  std::unique_ptr<ArrowModel> m_arrow;
   std::unordered_map<std::uint64_t, std::unique_ptr<GpuMesh>> m_meshes;
   std::unordered_map<Colormap, std::unique_ptr<gl::Texture1D>> m_colormaps;
 };
